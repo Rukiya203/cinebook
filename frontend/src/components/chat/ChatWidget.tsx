@@ -2,9 +2,11 @@ import Box from '@oxygen-ui/react/Box';
 import Button from '@oxygen-ui/react/Button';
 import CircularProgress from '@oxygen-ui/react/CircularProgress';
 import Typography from '@oxygen-ui/react/Typography';
-import { CheckCircle, MessageCircle, Send, Sparkles, X } from 'lucide-react';
+import { CheckCircle, ExternalLink, MessageCircle, Send, Sparkles, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { type ChatBooking, type ChatMessage, sendMessage } from '../../services/chatService';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { type ChatBooking, type ChatMessage, clearHistory, getHistory, sendMessage } from '../../services/chatService';
 import { C } from '../../theme';
 
 const SUGGESTIONS = [
@@ -52,15 +54,25 @@ function BookingCard({ booking }: { booking: ChatBooking }) {
       <Typography variant="caption" sx={{ color: C.muted, mt: 0.5, display: 'block' }}>
         Ref: #{booking.id.slice(0, 8).toUpperCase()}
       </Typography>
+      <Box
+        component={Link}
+        to="/profile"
+        sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 1.5, color: C.accent, fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+      >
+        <ExternalLink size={12} />
+        View in My Bookings
+      </Box>
     </Box>
   );
 }
 
 export default function ChatWidget() {
+  const { isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<DisplayMessage[]>([{ role: 'assistant', content: WELCOME.content }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -71,6 +83,26 @@ export default function ChatWidget() {
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 150);
   }, [open]);
+
+  // Load saved history once when the chat opens for an authenticated user
+  useEffect(() => {
+    if (!open || !isAuthenticated || historyLoaded) return;
+    setHistoryLoaded(true);
+    getHistory().then((history) => {
+      if (history.length > 0) {
+        setMessages([
+          { role: 'assistant', content: WELCOME.content },
+          ...history.map((m) => ({ role: m.role, content: m.content })),
+        ]);
+      }
+    }).catch(() => {});
+  }, [open, isAuthenticated, historyLoaded]);
+
+  const handleClearHistory = async () => {
+    await clearHistory().catch(() => {});
+    setMessages([{ role: 'assistant', content: WELCOME.content }]);
+    setHistoryLoaded(false);
+  };
 
   const send = async (text: string) => {
     const trimmed = text.trim();
@@ -136,11 +168,30 @@ export default function ChatWidget() {
               <Typography variant="body1" fontWeight={700} color="text.primary">CineBot</Typography>
               <Typography variant="caption" color="text.secondary">AI assistant · can book tickets</Typography>
             </Box>
+            {isAuthenticated && messages.length > 1 && (
+              <Box component="button" onClick={handleClearHistory} title="Clear history"
+                sx={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, display: 'flex', p: 0.5, borderRadius: 1, '&:hover': { color: 'error.main', bgcolor: C.border } }}>
+                <Trash2 size={15} />
+              </Box>
+            )}
             <Box component="button" onClick={() => setOpen(false)}
               sx={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, display: 'flex', p: 0.5, borderRadius: 1, '&:hover': { color: C.text, bgcolor: C.border } }}>
               <X size={18} />
             </Box>
           </Box>
+
+          {/* Login nudge — shown when not authenticated */}
+          {!isAuthenticated && (
+            <Box sx={{ mx: 2, mt: 1.5, px: 2, py: 1.25, bgcolor: `${C.gold}15`, border: `1px solid ${C.gold}44`, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexShrink: 0 }}>
+              <Typography variant="caption" sx={{ color: C.gold, fontWeight: 600 }}>
+                Log in to book tickets with CineBot
+              </Typography>
+              <Box component={Link} to="/auth"
+                sx={{ fontSize: '0.7rem', fontWeight: 700, color: C.gold, textDecoration: 'none', border: `1px solid ${C.gold}66`, borderRadius: 1, px: 1, py: 0.25, whiteSpace: 'nowrap', '&:hover': { bgcolor: `${C.gold}22` } }}>
+                Sign In →
+              </Box>
+            </Box>
+          )}
 
           {/* Messages */}
           <Box sx={{

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/moviebooking/backend/internal/middleware"
 	"github.com/moviebooking/backend/internal/model"
 	"github.com/moviebooking/backend/internal/repository"
 	"github.com/moviebooking/backend/internal/service"
@@ -21,6 +22,7 @@ type ChatHandler struct {
 	movieRepo    repository.MovieRepository
 	showtimeRepo repository.ShowtimeRepository
 	bookingSvc   service.BookingService
+	chatRepo     repository.ChatRepository
 	groqAPIKey   string
 	jwtSecret    string
 }
@@ -29,9 +31,10 @@ func NewChatHandler(
 	movieRepo repository.MovieRepository,
 	showtimeRepo repository.ShowtimeRepository,
 	bookingSvc service.BookingService,
+	chatRepo repository.ChatRepository,
 	groqAPIKey, jwtSecret string,
 ) *ChatHandler {
-	return &ChatHandler{movieRepo, showtimeRepo, bookingSvc, groqAPIKey, jwtSecret}
+	return &ChatHandler{movieRepo, showtimeRepo, bookingSvc, chatRepo, groqAPIKey, jwtSecret}
 }
 
 // ── request / response ────────────────────────────────────────────────────────
@@ -136,6 +139,14 @@ func (h *ChatHandler) Chat(w http.ResponseWriter, r *http.Request) {
 			if choice.Message.Content != nil {
 				content = *choice.Message.Content
 			}
+			// Persist the new exchange for authenticated users
+			if userID != "" && len(req.Messages) > 0 {
+				last := req.Messages[len(req.Messages)-1]
+				if last.Role == "user" {
+					h.chatRepo.Save(userID, "user", last.Content)         //nolint:errcheck
+					h.chatRepo.Save(userID, "assistant", content)          //nolint:errcheck
+				}
+			}
 			utils.Success(w, chatResp{Message: content, Booking: finalBooking})
 			return
 		}
@@ -166,6 +177,30 @@ func (h *ChatHandler) Chat(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	utils.InternalError(w, "agent could not complete the request")
+}
+
+// GetHistory handles GET /api/chat/history — returns saved chat history for the user.
+func (h *ChatHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
+	msgs, err := h.chatRepo.FindByUserID(userID, 100)
+	if err != nil {
+		utils.InternalError(w, "failed to fetch chat history")
+		return
+	}
+	if msgs == nil {
+		msgs = []*model.ChatMessage{}
+	}
+	utils.Success(w, msgs)
+}
+
+// ClearHistory handles DELETE /api/chat/history — deletes all chat messages for the user.
+func (h *ChatHandler) ClearHistory(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
+	if err := h.chatRepo.DeleteByUserID(userID); err != nil {
+		utils.InternalError(w, "failed to clear chat history")
+		return
+	}
+	utils.Success(w, map[string]string{"message": "Chat history cleared"})
 }
 
 func (h *ChatHandler) callGroq(ctx context.Context, msgs []groqMsg, tools []map[string]interface{}) (*groqResp, error) {

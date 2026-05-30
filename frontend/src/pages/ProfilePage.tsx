@@ -34,7 +34,17 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState<string | null>(null);
 
-  useEffect(() => { bookingService.getMyBookings().then(setBookings).finally(() => setLoading(false)); }, []);
+  const fetchBookings = () => {
+    setLoading(true);
+    bookingService.getMyBookings().then(setBookings).finally(() => setLoading(false));
+  };
+
+  // Fetch on mount and whenever the tab regains focus (e.g. after a CineBot booking)
+  useEffect(() => {
+    fetchBookings();
+    window.addEventListener('focus', fetchBookings);
+    return () => window.removeEventListener('focus', fetchBookings);
+  }, []);
 
   const handleCancel = async (id: string) => {
     setCancelling(id);
