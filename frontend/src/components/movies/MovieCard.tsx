@@ -10,9 +10,8 @@ import { C } from '../../theme';
 
 export default function MovieCard({ movie }: { movie: Movie }) {
   return (
+    <Link to={`/movies/${movie.id}`} style={{ textDecoration: 'none', display: 'block' }}>
     <Card
-      component={Link}
-      to={`/movies/${movie.id}`}
       sx={{
         display: 'block',
         textDecoration: 'none',
@@ -75,5 +74,6 @@ export default function MovieCard({ movie }: { movie: Movie }) {
         </Box>
       </Box>
     </Card>
+    </Link>
   );
 }
