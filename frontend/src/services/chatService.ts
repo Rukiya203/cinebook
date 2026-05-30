@@ -23,11 +23,18 @@ export async function sendMessage(messages: ChatMessage[]): Promise<ChatResponse
   return data.data as ChatResponse;
 }
 
-export async function getHistory(): Promise<ChatMessage[]> {
+export interface HistoryMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string;
+}
+
+export async function getHistory(): Promise<HistoryMessage[]> {
   const { data } = await api.get('/chat/history');
-  return (data.data ?? []).map((m: { role: string; content: string }) => ({
+  return (data.data ?? []).map((m: { role: string; content: string; created_at: string }) => ({
     role: m.role as 'user' | 'assistant',
     content: m.content,
+    created_at: m.created_at,
   }));
 }
 
