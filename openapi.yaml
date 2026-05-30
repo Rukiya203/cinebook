@@ -1,0 +1,657 @@
+openapi: 3.0.3
+info:
+  title: CineBook API
+  description: |
+    REST API for the CineBook movie ticket booking platform.
+
+    **Authentication**: Protected endpoints require a Bearer JWT token obtained
+    from `/api/auth/login` or `/api/auth/register`. Pass it as:
+    ```
+    Authorization: Bearer <token>
+    ```
+  version: 1.0.0
+  contact:
+    email: rukshancoc@gmail.com
+
+servers:
+  - url: http://localhost:8080/api
+    description: Local development server
+
+tags:
+  - name: Auth
+    description: User registration and login
+  - name: Movies
+    description: Browse the movie catalogue
+  - name: Showtimes
+    description: Showtime schedules and seat availability
+  - name: Bookings
+    description: Create and manage ticket bookings (requires authentication)
+
+# ---------------------------------------------------------------------------
+# Reusable components
+# ---------------------------------------------------------------------------
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # --- Primitives / shared --------------------------------------------------
+    APIResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          description: Present on successful responses; absent on errors.
+        error:
+          type: string
+          description: Human-readable error detail; present only on failure.
+
+    # --- Auth -----------------------------------------------------------------
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          example: John Doe
+        email:
+          type: string
+          format: email
+          example: john@example.com
+        password:
+          type: string
+          minLength: 6
+          example: secret123
+        phone:
+          type: string
+          example: "+1 234 567 8900"
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: john@example.com
+        password:
+          type: string
+          example: secret123
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT Bearer token — include in Authorization header for protected endpoints.
+        user:
+          $ref: '#/components/schemas/User'
+
+    # --- Movies ---------------------------------------------------------------
+    Movie:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        genre:
+          type: array
+          items:
+            type: string
+          example: [Action, Sci-Fi]
+        rating:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 10
+          example: 8.5
+        duration:
+          type: integer
+          description: Runtime in minutes.
+          example: 148
+        poster_url:
+          type: string
+          format: uri
+        trailer_url:
+          type: string
+          format: uri
+        release_date:
+          type: string
+          example: "2024-07-19"
+        director:
+          type: string
+        cast:
+          type: array
+          items:
+            type: string
+        language:
+          type: string
+          example: English
+        is_now_showing:
+          type: boolean
+
+    # --- Showtimes & Seats ----------------------------------------------------
+    Showtime:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        movie_id:
+          type: string
+          format: uuid
+        movie:
+          $ref: '#/components/schemas/Movie'
+        theater:
+          type: string
+          example: "Screen 1"
+        date_time:
+          type: string
+          format: date-time
+        prices:
+          type: object
+          description: Price per seat type.
+          additionalProperties:
+            type: number
+          example:
+            regular: 12.00
+            premium: 18.00
+            vip: 25.00
+        available_seats:
+          type: integer
+        total_seats:
+          type: integer
+
+    Seat:
+      type: object
+      properties:
+        id:
+          type: string
+        showtime_id:
+          type: string
+          format: uuid
+        row:
+          type: string
+          example: "A"
+        number:
+          type: integer
+          example: 5
+        type:
+          type: string
+          enum: [regular, premium, vip]
+        is_booked:
+          type: boolean
+        price:
+          type: number
+          format: double
+
+    # --- Bookings -------------------------------------------------------------
+    CreateBookingRequest:
+      type: object
+      required: [showtime_id, seat_ids]
+      properties:
+        showtime_id:
+          type: string
+          format: uuid
+        seat_ids:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 8
+          example: ["seat-uuid-1", "seat-uuid-2"]
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        showtime_id:
+          type: string
+          format: uuid
+        showtime:
+          $ref: '#/components/schemas/Showtime'
+        movie:
+          $ref: '#/components/schemas/Movie'
+        seat_ids:
+          type: array
+          items:
+            type: string
+        seats:
+          type: array
+          items:
+            $ref: '#/components/schemas/Seat'
+        total_amount:
+          type: number
+          format: double
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled]
+        booked_at:
+          type: string
+          format: date-time
+
+    # --- Error ----------------------------------------------------------------
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "seat already booked"
+
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+paths:
+
+  # ---- Auth ----------------------------------------------------------------
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      description: Creates a new account and returns a JWT token ready to use immediately.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Account created successfully.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation error or email already registered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      description: |
+        Returns a JWT token on success. Returns distinct error messages for:
+        - Email not found → `"no account found with this email"`
+        - Wrong password → `"incorrect password"`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ---- Movies --------------------------------------------------------------
+
+  /movies:
+    get:
+      tags: [Movies]
+      summary: List movies
+      description: |
+        Returns all movies. Supports optional filtering:
+        - `search` performs a case-insensitive title match.
+        - `genre` filters by genre (case-insensitive).
+        - Only one filter is applied at a time; `search` takes precedence over `genre`.
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          example: inception
+        - name: genre
+          in: query
+          schema:
+            type: string
+          example: Action
+      responses:
+        '200':
+          description: List of movies.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Movie'
+
+  /movies/{id}:
+    get:
+      tags: [Movies]
+      summary: Get a movie by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Movie details.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Movie'
+        '404':
+          description: Movie not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /movies/{movieID}/showtimes:
+    get:
+      tags: [Showtimes]
+      summary: List showtimes for a movie
+      description: Returns all upcoming showtimes for the given movie, enriched with available/total seat counts.
+      parameters:
+        - name: movieID
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Showtimes for the movie.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Showtime'
+
+  # ---- Showtimes -----------------------------------------------------------
+
+  /showtimes/{id}:
+    get:
+      tags: [Showtimes]
+      summary: Get a showtime by ID
+      description: Returns full showtime details including the embedded movie object.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Showtime details with embedded movie.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Showtime'
+        '404':
+          description: Showtime not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /showtimes/{id}/seats:
+    get:
+      tags: [Showtimes]
+      summary: Get seat map for a showtime
+      description: |
+        Returns the full seat grid for the showtime. Each seat has a current
+        `is_booked` flag reflecting real-time availability.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Seat grid.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Seat'
+        '404':
+          description: Showtime not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ---- Bookings (protected) ------------------------------------------------
+
+  /bookings:
+    post:
+      tags: [Bookings]
+      summary: Create a booking
+      description: |
+        Atomically reserves the requested seats using a `SELECT FOR UPDATE`
+        database transaction, preventing double-booking under concurrent load.
+        Returns an error if any seat is already taken.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBookingRequest'
+      responses:
+        '201':
+          description: Booking confirmed.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Booking'
+        '400':
+          description: Seat already booked or invalid request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid JWT token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags: [Bookings]
+      summary: Get my bookings
+      description: Returns all bookings for the authenticated user, enriched with showtime, movie, and seat details.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of the user's bookings (empty array if none).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Booking'
+        '401':
+          description: Missing or invalid JWT token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /bookings/{id}:
+    get:
+      tags: [Bookings]
+      summary: Get a booking by ID
+      description: Returns a single booking. Returns 401 if the booking belongs to a different user.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Booking details.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Booking'
+        '401':
+          description: Not authenticated or booking belongs to another user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Booking not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /bookings/{id}/cancel:
+    patch:
+      tags: [Bookings]
+      summary: Cancel a booking
+      description: |
+        Cancels the booking and releases all its seats back to the available pool.
+        Only the booking owner can cancel. Cancelled bookings cannot be re-confirmed.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Booking cancelled successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '400':
+          description: Booking is already cancelled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated or booking belongs to another user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Booking not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

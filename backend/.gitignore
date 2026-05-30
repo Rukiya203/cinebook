@@ -1,0 +1,15 @@
+# Go build artifacts
+/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Dependency vendor directory (we use go modules)
+vendor/
+
+# Environment
+.env
