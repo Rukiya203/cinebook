@@ -36,6 +36,12 @@ var seedMovies = []movieSeed{
 	{"6", "Furiosa: A Mad Max Saga", "The origin story of renegade warrior Furiosa before she teamed up with Mad Max. As the world collapsed, young Furiosa was snatched from the Green Place of Many Mothers.", []string{"Action", "Adventure", "Sci-Fi"}, 7.8, 148, "https://picsum.photos/seed/furiosa2024/400/600", "2024-05-24", "George Miller", []string{"Anya Taylor-Joy", "Chris Hemsworth", "Tom Burke"}, "English", true},
 	{"7", "Inside Out 2", "Joy, Sadness, Anger, Fear and Disgust have been running a successful operation by all accounts. However, when Anxiety shows up, they aren't sure how to feel.", []string{"Animation", "Adventure", "Comedy"}, 7.8, 100, "https://picsum.photos/seed/insideout2024/400/600", "2024-06-14", "Kelsey Mann", []string{"Amy Poehler", "Maya Hawke", "Kensington Tallman", "Liza Lapira"}, "English", true},
 	{"8", "Deadpool & Wolverine", "Deadpool is offered a chance to join the Marvel Cinematic Universe by the Time Variance Authority. Instead he recruits a variant of Wolverine to save his universe from extinction.", []string{"Action", "Comedy", "Superhero"}, 8.1, 128, "https://picsum.photos/seed/deadpool2024/400/600", "2024-07-26", "Shawn Levy", []string{"Ryan Reynolds", "Hugh Jackman", "Emma Corrin", "Jennifer Garner"}, "English", false},
+	{"9", "Gladiator II", "Years after the death of Maximus, Lucius must fight in the Colosseum to save Rome from tyrannical emperors and honour the legacy of the fallen hero.", []string{"Action", "Drama", "History"}, 7.4, 148, "https://picsum.photos/seed/gladiator2024/400/600", "2024-11-22", "Ridley Scott", []string{"Paul Mescal", "Pedro Pascal", "Denzel Washington", "Connie Nielsen"}, "English", true},
+	{"10", "Kingdom of the Planet of the Apes", "Many generations after Caesar's reign, a young ape goes on a journey that leads him to question everything he's been taught about the past.", []string{"Sci-Fi", "Action", "Adventure"}, 7.2, 145, "https://picsum.photos/seed/apes2024/400/600", "2024-05-10", "Wes Ball", []string{"Owen Teague", "Freya Allan", "Kevin Durand", "Peter Macon"}, "English", true},
+	{"11", "Alien: Romulus", "A group of young space colonisers face the most terrifying life form in the universe while scavenging an abandoned space station between two worlds.", []string{"Sci-Fi", "Horror", "Thriller"}, 7.3, 119, "https://picsum.photos/seed/alien2024/400/600", "2024-08-16", "Fede Álvarez", []string{"Cailee Spaeny", "David Jonsson", "Archie Renaux", "Isabela Merced"}, "English", true},
+	{"12", "Twisters", "Kate Cooper, a former storm chaser haunted by a past tragedy, is lured back to the open plains by her friend Javi to test a new tornado-disruption system.", []string{"Action", "Adventure", "Thriller"}, 7.2, 122, "https://picsum.photos/seed/twisters2024/400/600", "2024-07-19", "Lee Isaac Chung", []string{"Daisy Edgar-Jones", "Glen Powell", "Anthony Ramos", "Maura Tierney"}, "English", true},
+	{"13", "The Wild Robot", "After shipwrecked robot Roz washes ashore a wild island, she must adapt to harsh surroundings and eventually bonds with an orphaned gosling she raises as her own.", []string{"Animation", "Adventure", "Drama"}, 8.3, 102, "https://picsum.photos/seed/wildrobot2024/400/600", "2024-09-27", "Chris Sanders", []string{"Lupita Nyong'o", "Pedro Pascal", "Kit Connor", "Bill Nighy"}, "English", true},
+	{"14", "Wicked", "The story of the unlikely friendship between Elphaba, a young woman with green skin who is misunderstood, and Glinda, a popular young woman, and how they differ.", []string{"Musical", "Fantasy", "Drama"}, 7.8, 160, "https://picsum.photos/seed/wicked2024/400/600", "2024-11-22", "Jon M. Chu", []string{"Cynthia Erivo", "Ariana Grande", "Jonathan Bailey", "Jeff Goldblum"}, "English", true},
 }
 
 func Seed(ctx context.Context, pool *pgxpool.Pool) error {
@@ -105,7 +111,7 @@ func seedShowtimes(ctx context.Context, pool *pgxpool.Pool) error {
 		"4DX Adventure":        {"regular": 22.00, "premium": 28.00, "vip": 38.00},
 	}
 	startTimes := []string{"10:00", "13:30", "16:00", "19:00", "21:30"}
-	movieIDs := []string{"1", "2", "3", "4", "5", "6", "7", "8"}
+	movieIDs := []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"}
 
 	type showtimeRow struct {
 		id       string
