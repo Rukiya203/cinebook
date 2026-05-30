@@ -1,8 +1,10 @@
+import Box from '@mui/material/Box';
 import { Toaster } from 'react-hot-toast';
 import { Route, Routes } from 'react-router-dom';
 import Footer from './components/common/Footer';
 import Header from './components/common/Header';
 import { AuthProvider } from './context/AuthContext';
+import { C } from './theme';
 import AuthPage from './pages/AuthPage';
 import BookingPage from './pages/BookingPage';
 import HomePage from './pages/HomePage';
@@ -13,32 +15,32 @@ import ProfilePage from './pages/ProfilePage';
 export default function App() {
   return (
     <AuthProvider>
-      <div className="min-h-screen flex flex-col bg-cinema-bg">
+      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
         <Header />
-        <main className="flex-1">
+        <Box component="main" sx={{ flex: 1 }}>
           <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/movies" element={<MoviesPage />} />
-            <Route path="/movies/:id" element={<MovieDetailPage />} />
+            <Route path="/"                    element={<HomePage />} />
+            <Route path="/movies"              element={<MoviesPage />} />
+            <Route path="/movies/:id"          element={<MovieDetailPage />} />
             <Route path="/booking/:showtimeId" element={<BookingPage />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/auth"                element={<AuthPage />} />
+            <Route path="/profile"             element={<ProfilePage />} />
           </Routes>
-        </main>
+        </Box>
         <Footer />
-      </div>
+      </Box>
       <Toaster
         position="top-right"
         toastOptions={{
           style: {
-            background: '#16162a',
-            color: '#e8e8f0',
-            border: '1px solid #252540',
+            background: C.card,
+            color: C.text,
+            border: `1px solid ${C.border}`,
             borderRadius: '12px',
             fontSize: '14px',
           },
-          success: { iconTheme: { primary: '#22c55e', secondary: '#16162a' } },
-          error: { iconTheme: { primary: '#e50914', secondary: '#16162a' } },
+          success: { iconTheme: { primary: '#22c55e', secondary: C.card } },
+          error:   { iconTheme: { primary: C.accent,  secondary: C.card } },
         }}
       />
     </AuthProvider>

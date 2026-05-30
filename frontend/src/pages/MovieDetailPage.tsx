@@ -1,3 +1,10 @@
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import Container from '@mui/material/Container';
+import Grid from '@mui/material/Grid';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
 import { format, parseISO } from 'date-fns';
 import { ArrowLeft, Calendar, Clock, MapPin, Star, Ticket, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -6,6 +13,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
 import movieService from '../services/movieService';
 import showtimeService from '../services/showtimeService';
+import { C } from '../theme';
 import type { Movie, Showtime } from '../types';
 import { formatCurrency, formatDate, formatDuration, formatRating, formatTime } from '../utils/formatters';
 
@@ -16,261 +24,191 @@ export default function MovieDetailPage() {
   const [movie, setMovie] = useState<Movie | null>(null);
   const [showtimes, setShowtimes] = useState<Showtime[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState('');
 
   useEffect(() => {
     if (!id) return;
     Promise.all([movieService.getById(id), showtimeService.getByMovieId(id)])
-      .then(([m, st]) => {
-        setMovie(m);
-        setShowtimes(st);
-        if (st.length > 0) {
-          setSelectedDate(format(parseISO(st[0].date_time), 'yyyy-MM-dd'));
-        }
-      })
+      .then(([m, st]) => { setMovie(m); setShowtimes(st); if (st.length > 0) setSelectedDate(format(parseISO(st[0].date_time), 'yyyy-MM-dd')); })
       .finally(() => setLoading(false));
   }, [id]);
 
   const dateGroups = useMemo(() => {
     const map = new Map<string, Showtime[]>();
-    showtimes.forEach((st) => {
-      const date = format(parseISO(st.date_time), 'yyyy-MM-dd');
-      if (!map.has(date)) map.set(date, []);
-      map.get(date)!.push(st);
-    });
+    showtimes.forEach((st) => { const d = format(parseISO(st.date_time), 'yyyy-MM-dd'); (map.get(d) ?? map.set(d, []).get(d))!.push(st); });
     return map;
   }, [showtimes]);
 
   const uniqueDates = [...dateGroups.keys()].sort().slice(0, 7);
-
   const todayShowtimes = dateGroups.get(selectedDate) ?? [];
 
   const theaterGroups = useMemo(() => {
     const map = new Map<string, Showtime[]>();
-    todayShowtimes.forEach((st) => {
-      if (!map.has(st.theater)) map.set(st.theater, []);
-      map.get(st.theater)!.push(st);
-    });
+    todayShowtimes.forEach((st) => { (map.get(st.theater) ?? map.set(st.theater, []).get(st.theater))!.push(st); });
     return map;
   }, [todayShowtimes]);
 
   const handleBookNow = (showtimeId: string) => {
-    if (!isAuthenticated) {
-      navigate(`/auth?returnTo=/booking/${showtimeId}`);
-      return;
-    }
+    if (!isAuthenticated) { navigate(`/auth?returnTo=/booking/${showtimeId}`); return; }
     navigate(`/booking/${showtimeId}`);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  if (!movie) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-cinema-text text-xl">Movie not found.</p>
-        <Link to="/movies" className="text-cinema-accent hover:underline">
-          Browse Movies
-        </Link>
-      </div>
-    );
-  }
+  if (loading) return <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><LoadingSpinner size="lg" /></Box>;
+  if (!movie) return (
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+      <Typography color="text.primary" variant="h6">Movie not found.</Typography>
+      <Button component={Link} to="/movies" color="primary">Browse Movies</Button>
+    </Box>
+  );
 
   return (
-    <div className="animate-fade-in">
+    <Box>
       {/* Hero Banner */}
-      <div className="relative h-[50vh] min-h-[320px] overflow-hidden">
-        <img
-          src={movie.poster_url}
-          alt={movie.title}
-          className="w-full h-full object-cover object-top"
-          onError={(e) => (e.currentTarget.style.display = 'none')}
+      <Box sx={{ position: 'relative', height: { xs: 280, md: '50vh' }, overflow: 'hidden', minHeight: 280 }}>
+        <Box component="img" src={movie.poster_url} alt={movie.title} onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = 'none'; }}
+          sx={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-cinema-bg via-cinema-bg/60 to-cinema-bg/20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-cinema-bg/80 to-transparent" />
-
-        <button
-          onClick={() => navigate(-1)}
-          className="absolute top-6 left-6 flex items-center gap-2 bg-black/40 backdrop-blur-sm hover:bg-black/60 text-white text-sm px-3 py-2 rounded-lg transition-colors border border-white/10"
+        <Box sx={{ position: 'absolute', inset: 0, background: `linear-gradient(to top, ${C.bg}, ${C.bg}99, ${C.bg}33)` }} />
+        <Box sx={{ position: 'absolute', inset: 0, background: `linear-gradient(to right, ${C.bg}cc, transparent)` }} />
+        <Button onClick={() => navigate(-1)} startIcon={<ArrowLeft size={16} />}
+          sx={{ position: 'absolute', top: 24, left: 24, bgcolor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', color: '#fff', borderRadius: 2, border: '1px solid rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' } }}
         >
-          <ArrowLeft className="w-4 h-4" />
           Back
-        </button>
-      </div>
+        </Button>
+      </Box>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-32 relative z-10 pb-16">
-        <div className="lg:grid lg:grid-cols-3 lg:gap-12">
+      <Container maxWidth="xl" sx={{ mt: { xs: -6, md: -16 }, position: 'relative', zIndex: 10, pb: 8 }}>
+        <Grid container spacing={6}>
           {/* Poster */}
-          <div className="hidden lg:block">
-            <div className="w-full aspect-[2/3] rounded-2xl overflow-hidden border-2 border-cinema-border shadow-card">
-              <img
-                src={movie.poster_url}
-                alt={movie.title}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
+          <Grid item lg={3} sx={{ display: { xs: 'none', lg: 'block' } }}>
+            <Box sx={{ aspectRatio: '2/3', borderRadius: 4, overflow: 'hidden', border: `2px solid ${C.border}` }}>
+              <Box component="img" src={movie.poster_url} alt={movie.title} onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = 'none'; }}
+                sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
-            </div>
-          </div>
+            </Box>
+          </Grid>
 
           {/* Details */}
-          <div className="lg:col-span-2 pt-4">
-            <h1 className="text-4xl sm:text-5xl font-black text-cinema-text leading-tight mb-4">
+          <Grid item xs={12} lg={9}>
+            <Typography variant="h3" fontWeight={900} color="text.primary" sx={{ lineHeight: 1.1, mb: 2, fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' } }}>
               {movie.title}
-            </h1>
+            </Typography>
 
-            {/* Meta info */}
-            <div className="flex flex-wrap items-center gap-4 mb-6">
-              <div className="flex items-center gap-1.5">
-                <Star className="w-5 h-5 text-cinema-gold fill-cinema-gold" />
-                <span className="text-cinema-gold font-bold text-xl">{formatRating(movie.rating)}</span>
-                <span className="text-cinema-muted text-sm">/10</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-cinema-text-secondary">
-                <Clock className="w-4 h-4" />
-                <span>{formatDuration(movie.duration)}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-cinema-text-secondary">
-                <Calendar className="w-4 h-4" />
-                <span>{movie.release_date}</span>
-              </div>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2.5, mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <Star size={20} color={C.gold} fill={C.gold} />
+                <Typography fontWeight={700} fontSize="1.25rem" sx={{ color: C.gold }}>{formatRating(movie.rating)}</Typography>
+                <Typography variant="caption" color="text.secondary">/10</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }} color="text.secondary">
+                <Clock size={16} /><Typography variant="body2">{formatDuration(movie.duration)}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }} color="text.secondary">
+                <Calendar size={16} /><Typography variant="body2">{movie.release_date}</Typography>
+              </Box>
               {movie.is_now_showing && (
-                <span className="bg-cinema-accent/20 text-cinema-accent border border-cinema-accent/40 text-xs font-semibold px-3 py-1 rounded-full">
-                  Now Showing
-                </span>
+                <Chip label="Now Showing" size="small" color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
               )}
-            </div>
+            </Box>
 
-            {/* Genres */}
-            <div className="flex flex-wrap gap-2 mb-6">
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
               {movie.genre.map((g) => (
-                <span
-                  key={g}
-                  className="text-sm px-3 py-1 rounded-full bg-cinema-surface border border-cinema-border text-cinema-text-secondary"
-                >
-                  {g}
-                </span>
+                <Chip key={g} label={g} size="small" sx={{ bgcolor: C.surface, border: `1px solid ${C.border}`, color: C.textSec }} />
               ))}
-            </div>
+            </Box>
 
-            {/* Description */}
-            <p className="text-cinema-text-secondary leading-relaxed mb-8 text-base">
-              {movie.description}
-            </p>
+            <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8, mb: 4 }}>{movie.description}</Typography>
 
             {/* Cast & Crew */}
-            <div className="grid sm:grid-cols-2 gap-6 mb-10 p-5 bg-cinema-card border border-cinema-border rounded-xl">
-              <div>
-                <p className="text-cinema-muted text-xs uppercase tracking-wider font-semibold mb-2">Director</p>
-                <p className="text-cinema-text font-medium">{movie.director}</p>
-              </div>
-              <div>
-                <p className="text-cinema-muted text-xs uppercase tracking-wider font-semibold mb-2">Language</p>
-                <p className="text-cinema-text font-medium">{movie.language}</p>
-              </div>
-              <div className="sm:col-span-2">
-                <p className="text-cinema-muted text-xs uppercase tracking-wider font-semibold mb-2 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5" /> Cast
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {movie.cast.map((actor) => (
-                    <span
-                      key={actor}
-                      className="text-sm px-2.5 py-1 rounded-lg bg-cinema-surface border border-cinema-border text-cinema-text-secondary"
-                    >
-                      {actor}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <Paper variant="outlined" sx={{ p: 2.5, mb: 5, border: `1px solid ${C.border}` }}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="caption" sx={{ color: C.muted, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 700 }}>Director</Typography>
+                  <Typography variant="body1" fontWeight={500} color="text.primary" mt={0.5}>{movie.director}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="caption" sx={{ color: C.muted, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 700 }}>Language</Typography>
+                  <Typography variant="body1" fontWeight={500} color="text.primary" mt={0.5}>{movie.language}</Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Users size={14} color={C.muted} />
+                    <Typography variant="caption" sx={{ color: C.muted, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 700 }}>Cast</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {movie.cast.map((a) => (
+                      <Chip key={a} label={a} size="small" sx={{ bgcolor: C.surface, border: `1px solid ${C.border}`, color: C.textSec }} />
+                    ))}
+                  </Box>
+                </Grid>
+              </Grid>
+            </Paper>
 
             {/* Showtimes */}
             {showtimes.length > 0 ? (
-              <div>
-                <h2 className="text-2xl font-bold text-cinema-text mb-5 flex items-center gap-2">
-                  <Ticket className="w-6 h-6 text-cinema-accent" />
-                  Book Tickets
-                </h2>
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+                  <Ticket size={22} color={C.accent} />
+                  <Typography variant="h5" fontWeight={700} color="text.primary">Book Tickets</Typography>
+                </Box>
 
                 {/* Date selector */}
-                <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
+                <Box sx={{ display: 'flex', gap: 1.5, overflowX: 'auto', pb: 1.5, mb: 3, '&::-webkit-scrollbar': { display: 'none' } }}>
                   {uniqueDates.map((date) => {
                     const isSelected = selectedDate === date;
-                    const label = formatDate(date + 'T00:00:00');
                     return (
-                      <button
-                        key={date}
-                        onClick={() => setSelectedDate(date)}
-                        className={`flex-shrink-0 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
-                          isSelected
-                            ? 'bg-cinema-accent border-cinema-accent text-white shadow-glow-red'
-                            : 'border-cinema-border text-cinema-text-secondary hover:border-cinema-accent/50 hover:text-cinema-text bg-cinema-card'
-                        }`}
+                      <Button key={date} onClick={() => setSelectedDate(date)} variant={isSelected ? 'contained' : 'outlined'}
+                        sx={{ flexShrink: 0, borderRadius: 2.5, borderColor: isSelected ? 'primary.main' : C.border, color: isSelected ? '#fff' : C.textSec, bgcolor: isSelected ? 'primary.main' : C.card, '&:hover': { borderColor: 'primary.main', bgcolor: isSelected ? 'primary.dark' : `${C.accent}22` } }}
                       >
-                        {label}
-                      </button>
+                        {formatDate(date + 'T00:00:00')}
+                      </Button>
                     );
                   })}
-                </div>
+                </Box>
 
-                {/* Theater groups */}
-                <div className="space-y-5">
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                   {[...theaterGroups.entries()].map(([theater, sts]) => (
-                    <div key={theater} className="bg-cinema-card border border-cinema-border rounded-xl p-5">
-                      <div className="flex items-center gap-2 mb-4 text-cinema-text-secondary">
-                        <MapPin className="w-4 h-4 text-cinema-accent" />
-                        <span className="font-medium text-cinema-text">{theater}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-3">
+                    <Paper key={theater} variant="outlined" sx={{ p: 2.5, border: `1px solid ${C.border}` }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5 }}>
+                        <MapPin size={16} color={C.accent} />
+                        <Typography fontWeight={600} color="text.primary">{theater}</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                         {sts.map((st) => {
                           const minPrice = Math.min(...Object.values(st.prices));
+                          const soldOut = st.available_seats === 0;
                           return (
-                            <button
-                              key={st.id}
-                              onClick={() => handleBookNow(st.id)}
-                              disabled={st.available_seats === 0}
-                              className={`group flex flex-col items-center px-5 py-3 rounded-xl border transition-all ${
-                                st.available_seats === 0
-                                  ? 'border-cinema-border text-cinema-muted cursor-not-allowed opacity-50'
-                                  : 'border-cinema-border hover:border-cinema-accent hover:bg-cinema-accent/10 cursor-pointer'
-                              }`}
+                            <Box key={st.id} component="button" onClick={() => !soldOut && handleBookNow(st.id)}
+                              disabled={soldOut}
+                              sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', px: 3, py: 1.5, border: `1px solid ${C.border}`, borderRadius: 2.5, background: 'none', cursor: soldOut ? 'not-allowed' : 'pointer', opacity: soldOut ? 0.5 : 1, transition: 'all 0.15s', '&:hover:not(:disabled)': { borderColor: C.accent, bgcolor: `${C.accent}1a` } }}
                             >
-                              <span className="text-cinema-text font-bold text-lg group-hover:text-cinema-accent transition-colors">
+                              <Typography fontWeight={700} fontSize="1.125rem" color="text.primary"
+                                sx={{ '.MuiBox-root:hover &': { color: 'primary.main' } }}
+                              >
                                 {formatTime(st.date_time)}
-                              </span>
-                              <span className="text-cinema-muted text-xs mt-1">
-                                {st.available_seats > 0
-                                  ? `From ${formatCurrency(minPrice)}`
-                                  : 'Sold Out'}
-                              </span>
-                              {st.available_seats > 0 && st.available_seats <= 10 && (
-                                <span className="text-cinema-accent text-xs font-medium mt-0.5">
-                                  {st.available_seats} left!
-                                </span>
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {soldOut ? 'Sold Out' : `From ${formatCurrency(minPrice)}`}
+                              </Typography>
+                              {!soldOut && st.available_seats <= 10 && (
+                                <Typography variant="caption" sx={{ color: C.accent, fontWeight: 600 }}>{st.available_seats} left!</Typography>
                               )}
-                            </button>
+                            </Box>
                           );
                         })}
-                      </div>
-                    </div>
+                      </Box>
+                    </Paper>
                   ))}
-                </div>
-              </div>
+                </Box>
+              </Box>
             ) : (
-              <div className="text-center py-10 text-cinema-muted bg-cinema-card border border-cinema-border rounded-xl">
-                No showtimes available for this movie.
-              </div>
+              <Paper variant="outlined" sx={{ textAlign: 'center', py: 5, border: `1px solid ${C.border}` }}>
+                <Typography color="text.secondary">No showtimes available for this movie.</Typography>
+              </Paper>
             )}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Grid>
+        </Grid>
+      </Container>
+    </Box>
   );
 }

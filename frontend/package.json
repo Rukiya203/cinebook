@@ -9,6 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^5.18.0",
+    "@mui/material": "^5.18.0",
+    "@oxygen-ui/react": "^2.4.6",
     "axios": "^1.7.2",
     "date-fns": "^3.6.0",
     "lucide-react": "^0.400.0",
@@ -21,9 +26,6 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
-    "autoprefixer": "^10.4.19",
-    "postcss": "^8.4.39",
-    "tailwindcss": "^3.4.4",
     "typescript": "^5.4.5",
     "vite": "^5.3.1"
   }

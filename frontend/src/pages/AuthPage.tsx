@@ -1,93 +1,66 @@
-import { AlertCircle, Eye, EyeOff, Film, Loader2, UserPlus } from 'lucide-react';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import InputAdornment from '@mui/material/InputAdornment';
+import Paper from '@mui/material/Paper';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import { AlertCircle, Eye, EyeOff, Film, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import authService from '../services/authService';
+import { C } from '../theme';
 
-/** Discriminated union for the three distinct login failure states. */
 type LoginError = 'not_registered' | 'wrong_password' | 'generic' | null;
 
-// ---------------------------------------------------------------------------
-// Sub-component: LoginErrorBanner
-// Extracted here so the main form JSX stays readable.
-// ---------------------------------------------------------------------------
-
-interface LoginErrorBannerProps {
-  error: LoginError;
-  onRegisterClick: () => void;
-}
-
-/**
- * Renders a contextual error banner beneath the form tabs.
- * Shows a "Register Now" CTA when the email has no account,
- * a password-specific message when the password is wrong,
- * or a generic fallback for unexpected errors.
- */
-function LoginErrorBanner({ error, onRegisterClick }: LoginErrorBannerProps) {
+function LoginErrorBanner({ error, onRegisterClick }: { error: LoginError; onRegisterClick: () => void }) {
   if (!error) return null;
 
   if (error === 'not_registered') {
     return (
-      <div className="flex flex-col gap-3 bg-amber-500/10 border border-amber-500/40 rounded-xl p-4 animate-fade-in">
-        <div className="flex items-start gap-2.5">
-          <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-amber-300 font-semibold text-sm">No account found</p>
-            <p className="text-amber-400/80 text-xs mt-0.5">
+      <Box sx={{ bgcolor: 'rgba(245,184,24,0.1)', border: `1px solid rgba(245,184,24,0.4)`, borderRadius: 3, p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <AlertCircle size={20} color="#fbbf24" style={{ flexShrink: 0, marginTop: 2 }} />
+          <Box>
+            <Typography variant="body2" fontWeight={600} sx={{ color: '#fcd34d' }}>No account found</Typography>
+            <Typography variant="caption" sx={{ color: '#fbbf24cc' }}>
               This email isn't registered yet. Create a free account to start booking tickets.
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onRegisterClick}
-          className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm py-2 rounded-lg transition-colors"
+            </Typography>
+          </Box>
+        </Box>
+        <Button variant="contained" size="small" startIcon={<UserPlus size={16} />} onClick={onRegisterClick}
+          sx={{ bgcolor: '#f59e0b', color: '#000', '&:hover': { bgcolor: '#d97706' }, fontWeight: 700 }}
         >
-          <UserPlus className="w-4 h-4" />
           Register Now — It's Free
-        </button>
-      </div>
+        </Button>
+      </Box>
     );
   }
 
-  const message =
-    error === 'wrong_password'
-      ? "The password doesn't match this account. Please try again."
-      : 'Something went wrong. Please try again.';
-
-  const title = error === 'wrong_password' ? 'Incorrect password' : 'Login failed';
-
+  const isWrong = error === 'wrong_password';
   return (
-    <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/40 rounded-xl p-4 animate-fade-in">
-      <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-      <div>
-        <p className="text-red-300 font-semibold text-sm">{title}</p>
-        <p className="text-red-400/80 text-xs mt-0.5">{message}</p>
-      </div>
-    </div>
+    <Box sx={{ bgcolor: 'rgba(229,9,20,0.1)', border: `1px solid rgba(229,9,20,0.4)`, borderRadius: 3, p: 2, display: 'flex', gap: 1.5 }}>
+      <AlertCircle size={20} color={C.accent} style={{ flexShrink: 0, marginTop: 2 }} />
+      <Box>
+        <Typography variant="body2" fontWeight={600} sx={{ color: '#fca5a5' }}>{isWrong ? 'Incorrect password' : 'Login failed'}</Typography>
+        <Typography variant="caption" sx={{ color: '#f87171cc' }}>
+          {isWrong ? "The password doesn't match this account. Please try again." : 'Something went wrong. Please try again.'}
+        </Typography>
+      </Box>
+    </Box>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main component: AuthPage
-// ---------------------------------------------------------------------------
-
-/** Shared Tailwind class for all text inputs on this page. */
-const INPUT_CLASS =
-  'w-full bg-cinema-surface border border-cinema-border rounded-xl px-4 py-3 text-cinema-text placeholder-cinema-muted outline-none focus:border-cinema-accent/60 transition-colors text-sm';
-
-/**
- * AuthPage renders a login/register form with two tabs.
- * After a successful auth it navigates to the `returnTo` query param
- * (used by the booking flow to redirect back after login).
- */
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
-  const defaultTab = searchParams.get('tab') === 'register' ? 'register' : 'login';
+  const defaultTab = searchParams.get('tab') === 'register' ? 1 : 0;
   const returnTo = searchParams.get('returnTo') ?? '/';
 
-  const [tab, setTab] = useState<'login' | 'register'>(defaultTab);
+  const [tab, setTab] = useState(defaultTab);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loginError, setLoginError] = useState<LoginError>(null);
@@ -96,21 +69,13 @@ export default function AuthPage() {
   const navigate = useNavigate();
 
   const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({
-    name: '', email: '', password: '', phone: '',
-  });
+  const [registerData, setRegisterData] = useState({ name: '', email: '', password: '', phone: '' });
 
-  /** Switches to the register tab and pre-fills the email the user already typed. */
   const switchToRegister = () => {
-    setTab('register');
+    setTab(1);
     setLoginError(null);
-    if (loginData.email) {
-      setRegisterData((prev) => ({ ...prev, email: loginData.email }));
-    }
+    if (loginData.email) setRegisterData((p) => ({ ...p, email: loginData.email }));
   };
-
-  /** Clears the error banner whenever the user edits an input field. */
-  const clearError = () => setLoginError(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,9 +86,8 @@ export default function AuthPage() {
       login(res.token, res.user);
       toast.success(`Welcome back, ${res.user.name.split(' ')[0]}!`);
       navigate(returnTo);
-    } catch (err: unknown) {
+    } catch (err) {
       const msg = err instanceof Error ? err.message.toLowerCase() : '';
-      // Map the server's error message to the appropriate UI state.
       if (msg.includes('no account found')) setLoginError('not_registered');
       else if (msg.includes('incorrect password')) setLoginError('wrong_password');
       else setLoginError('generic');
@@ -134,207 +98,117 @@ export default function AuthPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (registerData.password.length < 6) {
-      toast.error('Password must be at least 6 characters.');
-      return;
-    }
+    if (registerData.password.length < 6) { toast.error('Password must be at least 6 characters.'); return; }
     setLoading(true);
     try {
       const res = await authService.register(registerData);
       login(res.token, res.user);
       toast.success(`Welcome to CineBook, ${res.user.name.split(' ')[0]}!`);
       navigate(returnTo);
-    } catch (err: unknown) {
+    } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Registration failed.');
     } finally {
       setLoading(false);
     }
   };
 
+  const passwordAdornment = (
+    <InputAdornment position="end">
+      <Box component="button" type="button" onClick={() => setShowPassword(!showPassword)}
+        sx={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, display: 'flex', '&:hover': { color: C.text } }}
+      >
+        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+      </Box>
+    </InputAdornment>
+  );
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 animate-fade-in">
-      <div className="w-full max-w-md">
+    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2, py: 6 }}>
+      <Box sx={{ width: '100%', maxWidth: 440 }}>
         {/* Logo */}
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 bg-cinema-accent rounded-xl flex items-center justify-center">
-              <Film className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-cinema-text">
-              Cine<span className="text-cinema-accent">Book</span>
-            </span>
-          </Link>
-          <h1 className="text-3xl font-bold text-cinema-text">
-            {tab === 'login' ? 'Welcome Back' : 'Create Account'}
-          </h1>
-          <p className="text-cinema-text-secondary mt-2 text-sm">
-            {tab === 'login'
-              ? 'Sign in to manage your bookings'
-              : 'Join CineBook and start booking tickets'}
-          </p>
-        </div>
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Box component={Link} to="/" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, textDecoration: 'none', mb: 3 }}>
+            <Box sx={{ width: 40, height: 40, bgcolor: 'primary.main', borderRadius: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Film size={22} color="#fff" />
+            </Box>
+            <Typography variant="h5" fontWeight={700} color="text.primary">
+              Cine<Box component="span" sx={{ color: 'primary.main' }}>Book</Box>
+            </Typography>
+          </Box>
+          <Typography variant="h4" fontWeight={700} color="text.primary">
+            {tab === 0 ? 'Welcome Back' : 'Create Account'}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            {tab === 0 ? 'Sign in to manage your bookings' : 'Join CineBook and start booking tickets'}
+          </Typography>
+        </Box>
 
-        <div className="bg-cinema-card border border-cinema-border rounded-2xl p-8 shadow-card">
-          {/* Tab switcher */}
-          <div className="flex gap-1 p-1 bg-cinema-surface rounded-xl mb-8">
-            {(['login', 'register'] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => { setTab(t); setLoginError(null); }}
-                className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                  tab === t
-                    ? 'bg-cinema-card text-cinema-text shadow-sm'
-                    : 'text-cinema-muted hover:text-cinema-text-secondary'
-                }`}
-              >
-                {t === 'login' ? 'Sign In' : 'Register'}
-              </button>
-            ))}
-          </div>
+        <Paper elevation={0} sx={{ border: `1px solid ${C.border}`, borderRadius: 3, p: 4 }}>
+          <Tabs value={tab} onChange={(_, v) => { setTab(v); setLoginError(null); }}
+            sx={{ mb: 4, bgcolor: C.surface, borderRadius: 2, p: 0.5, minHeight: 44,
+              '& .MuiTab-root': { borderRadius: 1.5, minHeight: 40, fontWeight: 600, color: C.muted, '&.Mui-selected': { color: C.text, bgcolor: C.card } },
+              '& .MuiTabs-indicator': { display: 'none' },
+            }}
+          >
+            <Tab label="Sign In" sx={{ flex: 1 }} />
+            <Tab label="Register" sx={{ flex: 1 }} />
+          </Tabs>
 
-          {/* Login Form */}
-          {tab === 'login' && (
-            <form onSubmit={handleLogin} className="space-y-4">
+          {/* Login */}
+          {tab === 0 && (
+            <Box component="form" onSubmit={handleLogin} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <LoginErrorBanner error={loginError} onRegisterClick={switchToRegister} />
-
-              <div>
-                <label className="block text-cinema-text-secondary text-xs font-medium mb-1.5 uppercase tracking-wide">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="you@example.com"
-                  value={loginData.email}
-                  onChange={(e) => { setLoginData({ ...loginData, email: e.target.value }); clearError(); }}
-                  className={INPUT_CLASS}
-                />
-              </div>
-
-              <div>
-                <label className="block text-cinema-text-secondary text-xs font-medium mb-1.5 uppercase tracking-wide">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    placeholder="Your password"
-                    value={loginData.password}
-                    onChange={(e) => { setLoginData({ ...loginData, password: e.target.value }); clearError(); }}
-                    className={`${INPUT_CLASS} pr-10`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-cinema-muted hover:text-cinema-text"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-cinema-accent hover:bg-cinema-accent-dark disabled:opacity-70 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 mt-2"
+              <TextField label="Email Address" type="email" required fullWidth value={loginData.email}
+                onChange={(e) => { setLoginData({ ...loginData, email: e.target.value }); setLoginError(null); }}
+              />
+              <TextField label="Password" type={showPassword ? 'text' : 'password'} required fullWidth value={loginData.password}
+                onChange={(e) => { setLoginData({ ...loginData, password: e.target.value }); setLoginError(null); }}
+                InputProps={{ endAdornment: passwordAdornment }}
+              />
+              <Button type="submit" variant="contained" color="primary" fullWidth size="large" disabled={loading}
+                sx={{ mt: 1, py: 1.5, borderRadius: 3 }}
               >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
-              </button>
-            </form>
+                {loading ? <CircularProgress size={22} color="inherit" /> : 'Sign In'}
+              </Button>
+            </Box>
           )}
 
-          {/* Register Form */}
-          {tab === 'register' && (
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div>
-                <label className="block text-cinema-text-secondary text-xs font-medium mb-1.5 uppercase tracking-wide">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="John Doe"
-                  value={registerData.name}
-                  onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
-                  className={INPUT_CLASS}
-                />
-              </div>
-
-              <div>
-                <label className="block text-cinema-text-secondary text-xs font-medium mb-1.5 uppercase tracking-wide">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="you@example.com"
-                  value={registerData.email}
-                  onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                  className={INPUT_CLASS}
-                />
-              </div>
-
-              <div>
-                <label className="block text-cinema-text-secondary text-xs font-medium mb-1.5 uppercase tracking-wide">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    minLength={6}
-                    placeholder="Min. 6 characters"
-                    value={registerData.password}
-                    onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                    className={`${INPUT_CLASS} pr-10`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-cinema-muted hover:text-cinema-text"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-cinema-text-secondary text-xs font-medium mb-1.5 uppercase tracking-wide">
-                  Phone <span className="text-cinema-muted normal-case">(optional)</span>
-                </label>
-                <input
-                  type="tel"
-                  placeholder="+1 234 567 8900"
-                  value={registerData.phone}
-                  onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
-                  className={INPUT_CLASS}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-cinema-accent hover:bg-cinema-accent-dark disabled:opacity-70 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 mt-2"
+          {/* Register */}
+          {tab === 1 && (
+            <Box component="form" onSubmit={handleRegister} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField label="Full Name" required fullWidth value={registerData.name}
+                onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
+              />
+              <TextField label="Email Address" type="email" required fullWidth value={registerData.email}
+                onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+              />
+              <TextField label="Password" type={showPassword ? 'text' : 'password'} required fullWidth value={registerData.password}
+                inputProps={{ minLength: 6 }}
+                onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                InputProps={{ endAdornment: passwordAdornment }}
+                helperText="Min. 6 characters"
+              />
+              <TextField label="Phone (optional)" type="tel" fullWidth value={registerData.phone}
+                onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
+              />
+              <Button type="submit" variant="contained" color="primary" fullWidth size="large" disabled={loading}
+                sx={{ mt: 1, py: 1.5, borderRadius: 3 }}
               >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Account'}
-              </button>
-            </form>
+                {loading ? <CircularProgress size={22} color="inherit" /> : 'Create Account'}
+              </Button>
+            </Box>
           )}
 
-          <p className="text-center text-cinema-muted text-sm mt-6">
-            {tab === 'login' ? "Don't have an account? " : 'Already have an account? '}
-            <button
-              onClick={() => setTab(tab === 'login' ? 'register' : 'login')}
-              className="text-cinema-accent hover:underline font-medium"
+          <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ mt: 3 }}>
+            {tab === 0 ? "Don't have an account? " : 'Already have an account? '}
+            <Box component="button" type="button" onClick={() => setTab(tab === 0 ? 1 : 0)}
+              sx={{ background: 'none', border: 'none', cursor: 'pointer', color: 'primary.main', fontWeight: 600, fontSize: 'inherit', '&:hover': { textDecoration: 'underline' } }}
             >
-              {tab === 'login' ? 'Register' : 'Sign In'}
-            </button>
-          </p>
-        </div>
-      </div>
-    </div>
+              {tab === 0 ? 'Register' : 'Sign In'}
+            </Box>
+          </Typography>
+        </Paper>
+      </Box>
+    </Box>
   );
 }
