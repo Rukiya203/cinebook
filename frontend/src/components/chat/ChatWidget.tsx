@@ -14,7 +14,7 @@ import {
   getHistory,
   sendMessage,
 } from '../../services/chatService';
-import { C } from '../../theme';
+import { C, thinScrollbar } from '../../theme';
 import BookingWizard from './BookingWizard';
 
 // ── constants ─────────────────────────────────────────────────────────────────
@@ -184,7 +184,7 @@ function HistoryPanel({ data, loading }: { data: HistoryMessage[]; loading: bool
   }
   const groups = groupByDate(data);
   return (
-    <Box sx={{ flex: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 0.5, '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: C.border, borderRadius: 2 } }}>
+    <Box sx={{ flex: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 0.5, ...thinScrollbar }}>
       {groups.map(({ label, items }) => (
         <Box key={label}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 1.5 }}>
@@ -398,7 +398,7 @@ export default function ChatWidget() {
 
           {/* Chat messages */}
           {view === 'chat' && (
-            <Box sx={{ flex: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 1.5, '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: C.border, borderRadius: 2 } }}>
+            <Box sx={{ flex: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 1.5, ...thinScrollbar }}>
               {messages.map((msg, i) => {
                 if (msg.role === 'booking' && msg.booking) {
                   return (

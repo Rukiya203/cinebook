@@ -64,11 +64,7 @@ func (s *bookingService) Create(userID string, req *model.CreateBookingRequest) 
 		return nil, err
 	}
 
-	// Build a lookup map for O(1) seat access.
-	seatByID := make(map[string]model.Seat, len(allSeats))
-	for _, seat := range allSeats {
-		seatByID[seat.ID] = seat
-	}
+	seatByID := buildSeatLookup(allSeats)
 
 	var selectedSeats []model.Seat
 	var totalAmount float64
@@ -152,6 +148,15 @@ func (s *bookingService) Cancel(id, userID string) error {
 	// does not leave seats locked on a cancelled booking.
 	s.showtimeRepo.CancelSeats(b.ShowtimeID, b.SeatIDs) //nolint:errcheck
 	return s.bookingRepo.UpdateStatus(id, model.BookingStatusCancelled)
+}
+
+// buildSeatLookup indexes a slice of seats by ID for O(1) access.
+func buildSeatLookup(seats []model.Seat) map[string]model.Seat {
+	m := make(map[string]model.Seat, len(seats))
+	for _, s := range seats {
+		m[s.ID] = s
+	}
+	return m
 }
 
 // enrichBooking populates a booking's Showtime, Movie, and Seats fields from related tables.

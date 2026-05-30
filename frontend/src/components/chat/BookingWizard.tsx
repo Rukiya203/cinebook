@@ -22,12 +22,10 @@ import { Link } from 'react-router-dom';
 import bookingService from '../../services/bookingService';
 import movieService from '../../services/movieService';
 import showtimeService from '../../services/showtimeService';
-import { C } from '../../theme';
-import type { Booking, Movie, Seat, Showtime } from '../../types';
+import { C, accentHover, thinScrollbar } from '../../theme';
+import type { Booking, Movie, Seat, Showtime, SeatType as SeatCategory } from '../../types';
 
 // ── types ─────────────────────────────────────────────────────────────────────
-
-type SeatCategory = 'regular' | 'premium' | 'vip';
 
 type WizardStep =
   | { step: 'movie' }
@@ -144,14 +142,14 @@ function MovieStep({ initialQuery, onSelect }: { initialQuery?: string; onSelect
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', py: 1 }}>Type to search our catalogue of 14 movies</Typography>
       )}
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxHeight: 200, overflowY: 'auto', '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: C.border, borderRadius: 2 } }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxHeight: 200, overflowY: 'auto', ...thinScrollbar }}>
         {movies.map((m) => (
           <Box key={m.id} component="button" onClick={() => onSelect(m)}
             sx={{
               display: 'flex', alignItems: 'center', gap: 1.5, width: '100%',
               background: 'none', border: `1px solid ${C.border}`, borderRadius: 2,
               p: 1, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
-              '&:hover': { borderColor: C.accent, bgcolor: `${C.accent}11` },
+              ...accentHover,
             }}>
             <Box component="img" src={m.poster_url} alt={m.title}
               onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = 'none'; }}
@@ -189,7 +187,7 @@ function TheaterStep({ movie, showtimes, onSelect }: { movie: Movie; showtimes: 
                 display: 'flex', alignItems: 'center', gap: 1.5, width: '100%',
                 background: 'none', border: `1px solid ${C.border}`, borderRadius: 2,
                 px: 2, py: 1.5, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
-                '&:hover': { borderColor: C.accent, bgcolor: `${C.accent}11` },
+                ...accentHover,
               }}>
               <MapPin size={16} color={C.accent} style={{ flexShrink: 0 }} />
               <Box sx={{ flex: 1 }}>
@@ -219,7 +217,7 @@ function TimeStep({ movie, theater, showtimes, onSelect }: { movie: Movie; theat
       {groups.length === 0 && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', py: 2 }}>No upcoming showtimes at this theater</Typography>
       )}
-      <Box sx={{ maxHeight: 220, overflowY: 'auto', '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: C.border, borderRadius: 2 } }}>
+      <Box sx={{ maxHeight: 220, overflowY: 'auto', ...thinScrollbar }}>
         {groups.map(({ label, items }) => (
           <Box key={label} sx={{ mb: 1.5 }}>
             <Divider label={label} />
