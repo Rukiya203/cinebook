@@ -1,5 +1,5 @@
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
+import Box from '@oxygen-ui/react/Box';
+import Typography from '@oxygen-ui/react/Typography';
 import type { Seat, SeatType } from '../../types';
 import { formatCurrency } from '../../utils/formatters';
 import { C } from '../../theme';
