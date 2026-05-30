@@ -1,11 +1,11 @@
-import Avatar from '@mui/material/Avatar';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
+import Avatar from '@oxygen-ui/react/Avatar';
+import Box from '@oxygen-ui/react/Box';
+import Button from '@oxygen-ui/react/Button';
+import Chip from '@oxygen-ui/react/Chip';
+import Container from '@oxygen-ui/react/Container';
+import Grid from '@oxygen-ui/react/Grid';
+import Paper from '@oxygen-ui/react/Paper';
+import Typography from '@oxygen-ui/react/Typography';
 import { format, parseISO } from 'date-fns';
 import { Calendar, Clock, Film, Mail, MapPin, Phone, Ticket, User, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -85,7 +85,7 @@ export default function ProfilePage() {
           { label: 'Upcoming', value: upcomingBookings.length },
           { label: 'Total Spent', value: formatCurrency(totalSpent(bookings)) },
         ].map(({ label, value }) => (
-          <Grid item xs={4} key={label}>
+          <Grid xs={4} key={label}>
             <Paper variant="outlined" sx={{ p: 2, textAlign: 'center', border: `1px solid ${C.border}` }}>
               <Typography variant="h5" fontWeight={700} color="text.primary">{value}</Typography>
               <Typography variant="caption" color="text.secondary">{label}</Typography>

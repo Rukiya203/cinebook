@@ -1,6 +1,6 @@
-import Box from '@mui/material/Box';
-import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
+import Box from '@oxygen-ui/react/Box';
+import Container from '@oxygen-ui/react/Container';
+import Typography from '@oxygen-ui/react/Typography';
 import { Film } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { C } from '../../theme';

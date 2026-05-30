@@ -1,4 +1,4 @@
-import Box from '@mui/material/Box';
+import Box from '@oxygen-ui/react/Box';
 import { Toaster } from 'react-hot-toast';
 import { Route, Routes } from 'react-router-dom';
 import Footer from './components/common/Footer';

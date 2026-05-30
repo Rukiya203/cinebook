@@ -1,10 +1,10 @@
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Container from '@mui/material/Container';
-import Divider from '@mui/material/Divider';
-import Grid from '@mui/material/Grid';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
+import Box from '@oxygen-ui/react/Box';
+import Button from '@oxygen-ui/react/Button';
+import Container from '@oxygen-ui/react/Container';
+import Divider from '@oxygen-ui/react/Divider';
+import Grid from '@oxygen-ui/react/Grid';
+import Paper from '@oxygen-ui/react/Paper';
+import Typography from '@oxygen-ui/react/Typography';
 import { ArrowLeft, CheckCircle, Clock, MapPin, Star, Ticket } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -136,7 +136,7 @@ export default function BookingPage() {
       </Box>
 
       <Grid container spacing={4}>
-        <Grid item xs={12} lg={8}>
+        <Grid xs={12} lg={8}>
           {/* Showtime card */}
           <Paper variant="outlined" sx={{ p: 2.5, mb: 3, border: `1px solid ${C.border}`, display: 'flex', gap: 2.5 }}>
             <Box component="img" src={showtime.movie?.poster_url} alt={showtime.movie?.title}
@@ -186,7 +186,7 @@ export default function BookingPage() {
         </Grid>
 
         {/* Order Summary */}
-        <Grid item xs={12} lg={4}>
+        <Grid xs={12} lg={4}>
           <Paper variant="outlined" sx={{ p: 2.5, border: `1px solid ${C.border}`, position: 'sticky', top: 88 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <Ticket size={20} color={C.accent} />

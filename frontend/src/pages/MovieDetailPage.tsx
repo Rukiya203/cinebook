@@ -1,10 +1,10 @@
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
+import Box from '@oxygen-ui/react/Box';
+import Button from '@oxygen-ui/react/Button';
+import Chip from '@oxygen-ui/react/Chip';
+import Container from '@oxygen-ui/react/Container';
+import Grid from '@oxygen-ui/react/Grid';
+import Paper from '@oxygen-ui/react/Paper';
+import Typography from '@oxygen-ui/react/Typography';
 import { format, parseISO } from 'date-fns';
 import { ArrowLeft, Calendar, Clock, MapPin, Star, Ticket, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -80,7 +80,7 @@ export default function MovieDetailPage() {
       <Container maxWidth="xl" sx={{ mt: { xs: -6, md: -16 }, position: 'relative', zIndex: 10, pb: 8 }}>
         <Grid container spacing={6}>
           {/* Poster */}
-          <Grid item lg={3} sx={{ display: { xs: 'none', lg: 'block' } }}>
+          <Grid lg={3} sx={{ display: { xs: 'none', lg: 'block' } }}>
             <Box sx={{ aspectRatio: '2/3', borderRadius: 4, overflow: 'hidden', border: `2px solid ${C.border}` }}>
               <Box component="img" src={movie.poster_url} alt={movie.title} onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = 'none'; }}
                 sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -89,7 +89,7 @@ export default function MovieDetailPage() {
           </Grid>
 
           {/* Details */}
-          <Grid item xs={12} lg={9}>
+          <Grid xs={12} lg={9}>
             <Typography variant="h3" fontWeight={900} color="text.primary" sx={{ lineHeight: 1.1, mb: 2, fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' } }}>
               {movie.title}
             </Typography>
@@ -122,15 +122,15 @@ export default function MovieDetailPage() {
             {/* Cast & Crew */}
             <Paper variant="outlined" sx={{ p: 2.5, mb: 5, border: `1px solid ${C.border}` }}>
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
+                <Grid xs={12} sm={6}>
                   <Typography variant="caption" sx={{ color: C.muted, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 700 }}>Director</Typography>
                   <Typography variant="body1" fontWeight={500} color="text.primary" mt={0.5}>{movie.director}</Typography>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid xs={12} sm={6}>
                   <Typography variant="caption" sx={{ color: C.muted, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 700 }}>Language</Typography>
                   <Typography variant="body1" fontWeight={500} color="text.primary" mt={0.5}>{movie.language}</Typography>
                 </Grid>
-                <Grid item xs={12}>
+                <Grid xs={12}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <Users size={14} color={C.muted} />
                     <Typography variant="caption" sx={{ color: C.muted, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 700 }}>Cast</Typography>

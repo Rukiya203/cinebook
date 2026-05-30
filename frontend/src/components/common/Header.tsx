@@ -1,9 +1,9 @@
-import AppBar from '@mui/material/AppBar';
-import Box from '@mui/material/Box';
-import Drawer from '@mui/material/Drawer';
-import IconButton from '@mui/material/IconButton';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
+import AppBar from '@oxygen-ui/react/AppBar';
+import Box from '@oxygen-ui/react/Box';
+import Drawer from '@oxygen-ui/react/Drawer';
+import IconButton from '@oxygen-ui/react/IconButton';
+import Toolbar from '@oxygen-ui/react/Toolbar';
+import Typography from '@oxygen-ui/react/Typography';
 import { Film, LogOut, Menu, Ticket, User, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';

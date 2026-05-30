@@ -1,11 +1,11 @@
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid';
-import InputAdornment from '@mui/material/InputAdornment';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
+import Box from '@oxygen-ui/react/Box';
+import Button from '@oxygen-ui/react/Button';
+import Chip from '@oxygen-ui/react/Chip';
+import Container from '@oxygen-ui/react/Container';
+import Grid from '@oxygen-ui/react/Grid';
+import InputAdornment from '@oxygen-ui/react/InputAdornment';
+import TextField from '@oxygen-ui/react/TextField';
+import Typography from '@oxygen-ui/react/Typography';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -124,7 +124,7 @@ export default function MoviesPage() {
       ) : (
         <Grid container spacing={3}>
           {movies.map((movie) => (
-            <Grid item key={movie.id} xs={6} sm={4} md={3} lg={12/5}>
+            <Grid key={movie.id} xs={6} sm={4} md={3} lg={12/5}>
               <MovieCard movie={movie} />
             </Grid>
           ))}

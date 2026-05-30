@@ -1,7 +1,7 @@
-import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import Chip from '@mui/material/Chip';
-import Typography from '@mui/material/Typography';
+import Box from '@oxygen-ui/react/Box';
+import Card from '@oxygen-ui/react/Card';
+import Chip from '@oxygen-ui/react/Chip';
+import Typography from '@oxygen-ui/react/Typography';
 import { Clock, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Movie } from '../../types';

@@ -1,5 +1,5 @@
-import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
+import Box from '@oxygen-ui/react/Box';
+import CircularProgress from '@oxygen-ui/react/CircularProgress';
 
 interface Props {
   size?: 'sm' | 'md' | 'lg';
