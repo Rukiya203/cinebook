@@ -1,3 +1,11 @@
+import Avatar from '@mui/material/Avatar';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import Container from '@mui/material/Container';
+import Grid from '@mui/material/Grid';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
 import { format, parseISO } from 'date-fns';
 import { Calendar, Clock, Film, Mail, MapPin, Phone, Ticket, User, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -6,24 +14,18 @@ import { Link, Navigate } from 'react-router-dom';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
 import bookingService from '../services/bookingService';
+import { C } from '../theme';
 import type { Booking } from '../types';
 import { formatCurrency, formatDateTime } from '../utils/formatters';
 
-/** Tailwind classes for each booking status badge. */
-const STATUS_STYLES: Record<string, string> = {
-  confirmed: 'bg-green-500/20 text-green-400 border-green-500/40',
-  cancelled:  'bg-red-500/20 text-red-400 border-red-500/40',
-  pending:    'bg-yellow-500/20 text-yellow-400 border-yellow-500/40',
+const STATUS_COLOR: Record<string, 'success' | 'error' | 'warning'> = {
+  confirmed: 'success',
+  cancelled: 'error',
+  pending: 'warning',
 };
 
-/**
- * Sums the total_amount of all confirmed bookings.
- * Extracted as a named function so it can be read easily in the stats grid.
- */
-function totalSpent(bookings: Booking[]): number {
-  return bookings
-    .filter((b) => b.status === 'confirmed')
-    .reduce((sum, b) => sum + b.total_amount, 0);
+function totalSpent(bookings: Booking[]) {
+  return bookings.filter((b) => b.status === 'confirmed').reduce((s, b) => s + b.total_amount, 0);
 }
 
 export default function ProfilePage() {
@@ -32,184 +34,139 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState<string | null>(null);
 
-  useEffect(() => {
-    bookingService.getMyBookings().then(setBookings).finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { bookingService.getMyBookings().then(setBookings).finally(() => setLoading(false)); }, []);
 
-  const handleCancel = async (bookingId: string) => {
-    setCancelling(bookingId);
+  const handleCancel = async (id: string) => {
+    setCancelling(id);
     try {
-      await bookingService.cancel(bookingId);
-      setBookings((prev) =>
-        prev.map((b) => (b.id === bookingId ? { ...b, status: 'cancelled' } : b))
-      );
+      await bookingService.cancel(id);
+      setBookings((prev) => prev.map((b) => b.id === id ? { ...b, status: 'cancelled' } : b));
       toast.success('Booking cancelled.');
-    } catch {
-      toast.error('Failed to cancel booking.');
-    } finally {
-      setCancelling(null);
-    }
+    } catch { toast.error('Failed to cancel booking.'); }
+    finally { setCancelling(null); }
   };
 
   if (!isAuthenticated) return <Navigate to="/auth" replace />;
 
-  const upcomingBookings = bookings.filter(
-    (b) => b.status === 'confirmed' && new Date(b.showtime?.date_time ?? '') > new Date()
-  );
+  const upcomingBookings = bookings.filter((b) => b.status === 'confirmed' && new Date(b.showtime?.date_time ?? '') > new Date());
+
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-fade-in">
+    <Container maxWidth="md" sx={{ py: 5 }}>
       {/* User Card */}
-      <div className="bg-cinema-card border border-cinema-border rounded-2xl p-6 mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-5">
-        <div className="w-16 h-16 rounded-full bg-cinema-accent/20 border-2 border-cinema-accent/40 flex items-center justify-center flex-shrink-0">
-          <User className="w-8 h-8 text-cinema-accent" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-cinema-text">{user?.name}</h1>
-          <div className="flex flex-wrap gap-4 mt-2">
-            <span className="flex items-center gap-1.5 text-cinema-text-secondary text-sm">
-              <Mail className="w-3.5 h-3.5" />
-              {user?.email}
-            </span>
+      <Paper variant="outlined" sx={{ p: 3, mb: 4, border: `1px solid ${C.border}`, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 3 }}>
+        <Avatar sx={{ width: 64, height: 64, bgcolor: `${C.accent}33`, border: `2px solid ${C.accent}66`, color: C.accent, flexShrink: 0 }}>
+          <User size={32} />
+        </Avatar>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography variant="h5" fontWeight={700} color="text.primary">{user?.name}</Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2.5, mt: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: C.textSec }}>
+              <Mail size={14} /><Typography variant="body2">{user?.email}</Typography>
+            </Box>
             {user?.phone && (
-              <span className="flex items-center gap-1.5 text-cinema-text-secondary text-sm">
-                <Phone className="w-3.5 h-3.5" />
-                {user.phone}
-              </span>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: C.textSec }}>
+                <Phone size={14} /><Typography variant="body2">{user.phone}</Typography>
+              </Box>
             )}
             {user?.created_at && (
-              <span className="flex items-center gap-1.5 text-cinema-muted text-sm">
-                <Calendar className="w-3.5 h-3.5" />
-                Member since {format(parseISO(user.created_at), 'MMM yyyy')}
-              </span>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: C.muted }}>
+                <Calendar size={14} /><Typography variant="body2">Member since {format(parseISO(user.created_at), 'MMM yyyy')}</Typography>
+              </Box>
             )}
-          </div>
-        </div>
-        <button
-          onClick={logout}
-          className="text-sm text-cinema-muted hover:text-cinema-accent transition-colors font-medium"
-        >
-          Sign Out
-        </button>
-      </div>
+          </Box>
+        </Box>
+        <Button onClick={logout} sx={{ color: C.muted, '&:hover': { color: C.accent }, flexShrink: 0 }}>Sign Out</Button>
+      </Paper>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <Grid container spacing={2} sx={{ mb: 4 }}>
         {[
           { label: 'Total Bookings', value: bookings.length },
           { label: 'Upcoming', value: upcomingBookings.length },
           { label: 'Total Spent', value: formatCurrency(totalSpent(bookings)) },
         ].map(({ label, value }) => (
-          <div key={label} className="bg-cinema-card border border-cinema-border rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold text-cinema-text">{value}</p>
-            <p className="text-cinema-muted text-xs mt-1">{label}</p>
-          </div>
+          <Grid item xs={4} key={label}>
+            <Paper variant="outlined" sx={{ p: 2, textAlign: 'center', border: `1px solid ${C.border}` }}>
+              <Typography variant="h5" fontWeight={700} color="text.primary">{value}</Typography>
+              <Typography variant="caption" color="text.secondary">{label}</Typography>
+            </Paper>
+          </Grid>
         ))}
-      </div>
+      </Grid>
 
       {/* Bookings */}
-      <div className="flex items-center gap-2 mb-5">
-        <Ticket className="w-5 h-5 text-cinema-accent" />
-        <h2 className="text-xl font-bold text-cinema-text">My Bookings</h2>
-      </div>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+        <Ticket size={20} color={C.accent} />
+        <Typography variant="h5" fontWeight={700} color="text.primary">My Bookings</Typography>
+      </Box>
 
       {loading ? (
-        <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><LoadingSpinner size="lg" /></Box>
       ) : bookings.length === 0 ? (
-        <div className="text-center py-20 bg-cinema-card border border-cinema-border rounded-2xl">
-          <Film className="w-14 h-14 text-cinema-muted mx-auto mb-4" />
-          <p className="text-cinema-text font-semibold text-xl mb-2">No bookings yet</p>
-          <p className="text-cinema-muted mb-6">Book your first movie ticket today!</p>
-          <Link
-            to="/movies"
-            className="inline-flex items-center gap-2 bg-cinema-accent hover:bg-cinema-accent-dark text-white font-semibold px-6 py-2.5 rounded-xl transition-colors text-sm"
-          >
-            Browse Movies
-          </Link>
-        </div>
+        <Paper variant="outlined" sx={{ textAlign: 'center', py: 10, border: `1px solid ${C.border}` }}>
+          <Film size={56} color={C.muted} style={{ margin: '0 auto 16px' }} />
+          <Typography variant="h6" fontWeight={600} color="text.primary" mb={1}>No bookings yet</Typography>
+          <Typography variant="body2" color="text.secondary" mb={3}>Book your first movie ticket today!</Typography>
+          <Button component={Link} to="/movies" variant="contained" sx={{ borderRadius: 2.5 }}>Browse Movies</Button>
+        </Paper>
       ) : (
-        <div className="space-y-4">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {[...bookings]
             .sort((a, b) => new Date(b.booked_at).getTime() - new Date(a.booked_at).getTime())
             .map((booking) => (
-              <div
-                key={booking.id}
-                className="bg-cinema-card border border-cinema-border rounded-xl p-5 flex gap-4"
-              >
-                {/* Movie poster */}
+              <Paper key={booking.id} variant="outlined" sx={{ p: 2.5, border: `1px solid ${C.border}`, display: 'flex', gap: 2.5 }}>
                 {booking.movie && (
-                  <img
-                    src={booking.movie.poster_url}
-                    alt={booking.movie.title}
-                    className="w-14 h-20 object-cover rounded-lg flex-shrink-0"
-                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                  <Box component="img" src={booking.movie.poster_url} alt={booking.movie.title}
+                    onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = 'none'; }}
+                    sx={{ width: 56, height: 80, objectFit: 'cover', borderRadius: 1.5, flexShrink: 0 }}
                   />
                 )}
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
+                    <Typography fontWeight={700} color="text.primary" noWrap>{booking.movie?.title ?? 'Movie'}</Typography>
+                    <Chip label={booking.status} size="small" color={STATUS_COLOR[booking.status] ?? 'default'}
+                      sx={{ textTransform: 'capitalize', fontWeight: 700, flexShrink: 0 }}
+                    />
+                  </Box>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 flex-wrap">
-                    <h3 className="text-cinema-text font-bold text-base truncate">
-                      {booking.movie?.title ?? 'Movie'}
-                    </h3>
-                    <span
-                      className={`text-xs font-semibold px-2.5 py-1 rounded-full border capitalize flex-shrink-0 ${STATUS_STYLES[booking.status]}`}
-                    >
-                      {booking.status}
-                    </span>
-                  </div>
+                  {booking.showtime && (
+                    <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: C.textSec }}>
+                        <Clock size={14} /><Typography variant="body2">{formatDateTime(booking.showtime.date_time)}</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: C.textSec }}>
+                        <MapPin size={14} /><Typography variant="body2">{booking.showtime.theater}</Typography>
+                      </Box>
+                    </Box>
+                  )}
 
-                  <div className="mt-2 space-y-1 text-sm text-cinema-text-secondary">
-                    {booking.showtime && (
-                      <>
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5" />
-                          {formatDateTime(booking.showtime.date_time)}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5" />
-                          {booking.showtime.theater}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap items-center gap-3">
-                    <div className="flex flex-wrap gap-1.5">
+                  <Box sx={{ mt: 1.5, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
                       {booking.seats?.map((s) => (
-                        <span
-                          key={s.id}
-                          className="text-xs font-medium bg-cinema-surface border border-cinema-border rounded px-1.5 py-0.5 text-cinema-text-secondary"
-                        >
+                        <Box key={s.id} sx={{ fontSize: '0.75rem', fontWeight: 500, bgcolor: C.surface, border: `1px solid ${C.border}`, borderRadius: 1, px: 1, py: 0.25, color: C.textSec }}>
                           {s.row}{s.number}
-                        </span>
+                        </Box>
                       ))}
-                    </div>
-                    <span className="text-cinema-text font-bold ml-auto">
-                      {formatCurrency(booking.total_amount)}
-                    </span>
-                  </div>
+                    </Box>
+                    <Typography fontWeight={700} color="text.primary" sx={{ ml: 'auto' }}>{formatCurrency(booking.total_amount)}</Typography>
+                  </Box>
 
-                  <div className="mt-3 flex items-center gap-3">
-                    <span className="text-cinema-muted text-xs">
-                      #{booking.id.slice(0, 8).toUpperCase()}
-                    </span>
-                    {booking.status === 'confirmed' &&
-                      booking.showtime &&
-                      new Date(booking.showtime.date_time) > new Date() && (
-                        <button
-                          onClick={() => handleCancel(booking.id)}
-                          disabled={cancelling === booking.id}
-                          className="ml-auto flex items-center gap-1 text-xs text-cinema-muted hover:text-red-400 transition-colors disabled:opacity-50"
-                        >
-                          <X className="w-3 h-3" />
-                          {cancelling === booking.id ? 'Cancelling...' : 'Cancel'}
-                        </button>
-                      )}
-                  </div>
-                </div>
-              </div>
+                  <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="caption" color="text.secondary">#{booking.id.slice(0, 8).toUpperCase()}</Typography>
+                    {booking.status === 'confirmed' && booking.showtime && new Date(booking.showtime.date_time) > new Date() && (
+                      <Button size="small" startIcon={cancelling === booking.id ? <LoadingSpinner size="sm" /> : <X size={14} />}
+                        onClick={() => handleCancel(booking.id)} disabled={cancelling === booking.id}
+                        sx={{ ml: 'auto', color: C.muted, '&:hover': { color: 'error.main' }, minWidth: 0 }}
+                      >
+                        {cancelling === booking.id ? 'Cancelling...' : 'Cancel'}
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
+              </Paper>
             ))}
-        </div>
+        </Box>
       )}
-    </div>
+    </Container>
   );
 }

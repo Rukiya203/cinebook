@@ -1,12 +1,20 @@
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Container from '@mui/material/Container';
+import Divider from '@mui/material/Divider';
+import Grid from '@mui/material/Grid';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
 import { ArrowLeft, CheckCircle, Clock, MapPin, Star, Ticket } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import LoadingSpinner from '../components/common/LoadingSpinner';
 import SeatMap from '../components/booking/SeatMap';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
 import bookingService from '../services/bookingService';
 import showtimeService from '../services/showtimeService';
+import { C } from '../theme';
 import type { Booking, Seat, Showtime } from '../types';
 import { formatCurrency, formatDateTime, formatDuration, formatRating } from '../utils/formatters';
 
@@ -25,29 +33,15 @@ export default function BookingPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate(`/auth?returnTo=/booking/${showtimeId}`);
-      return;
-    }
+    if (!isAuthenticated) { navigate(`/auth?returnTo=/booking/${showtimeId}`); return; }
     if (!showtimeId) return;
-    Promise.all([
-      showtimeService.getById(showtimeId),
-      showtimeService.getSeats(showtimeId),
-    ])
-      .then(([st, s]) => {
-        setShowtime(st);
-        setSeats(s);
-      })
+    Promise.all([showtimeService.getById(showtimeId), showtimeService.getSeats(showtimeId)])
+      .then(([st, s]) => { setShowtime(st); setSeats(s); })
       .catch(() => toast.error('Failed to load showtime.'))
       .finally(() => setLoading(false));
   }, [showtimeId, isAuthenticated, navigate]);
 
-  const toggleSeat = (seatId: string) => {
-    setSelectedSeats((prev) =>
-      prev.includes(seatId) ? prev.filter((id) => id !== seatId) : [...prev, seatId]
-    );
-  };
-
+  const toggleSeat = (id: string) => setSelectedSeats((p) => p.includes(id) ? p.filter((s) => s !== id) : [...p, id]);
   const selectedSeatDetails = seats.filter((s) => selectedSeats.includes(s.id));
   const totalAmount = selectedSeatDetails.reduce((sum, s) => sum + s.price, 0);
 
@@ -55,264 +49,190 @@ export default function BookingPage() {
     if (!showtimeId || selectedSeats.length === 0) return;
     setSubmitting(true);
     try {
-      const b = await bookingService.create({
-        showtime_id: showtimeId,
-        seat_ids: selectedSeats,
-      });
-      setBooking(b);
-      setStep('done');
+      const b = await bookingService.create({ showtime_id: showtimeId, seat_ids: selectedSeats });
+      setBooking(b); setStep('done');
       toast.success('Booking confirmed!');
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Booking failed. Please try again.';
-      toast.error(msg);
-    } finally {
-      setSubmitting(false);
-    }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Booking failed. Please try again.');
+    } finally { setSubmitting(false); }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
+  if (loading) return <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><LoadingSpinner size="lg" /></Box>;
 
-  if (!showtime) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-cinema-text text-xl">Showtime not found.</p>
-        <Link to="/movies" className="text-cinema-accent hover:underline">Browse Movies</Link>
-      </div>
-    );
-  }
+  if (!showtime) return (
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+      <Typography color="text.primary" variant="h6">Showtime not found.</Typography>
+      <Button component={Link} to="/movies" color="primary">Browse Movies</Button>
+    </Box>
+  );
 
-  if (step === 'done' && booking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4 animate-slide-up">
-        <div className="max-w-md w-full bg-cinema-card border border-cinema-border rounded-2xl p-8 text-center shadow-card">
-          <div className="w-20 h-20 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-10 h-10 text-green-400" />
-          </div>
-          <h2 className="text-3xl font-bold text-cinema-text mb-2">Booking Confirmed!</h2>
-          <p className="text-cinema-text-secondary mb-8">
-            Your tickets are booked. Enjoy the show!
-          </p>
+  if (step === 'done' && booking) return (
+    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2 }}>
+      <Paper elevation={0} sx={{ maxWidth: 480, width: '100%', border: `1px solid ${C.border}`, borderRadius: 4, p: 5, textAlign: 'center' }}>
+        <Box sx={{ width: 80, height: 80, borderRadius: '50%', bgcolor: 'rgba(34,197,94,0.15)', border: '2px solid #22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 3 }}>
+          <CheckCircle size={40} color="#22c55e" />
+        </Box>
+        <Typography variant="h4" fontWeight={700} color="text.primary" mb={1}>Booking Confirmed!</Typography>
+        <Typography color="text.secondary" mb={4}>Your tickets are booked. Enjoy the show!</Typography>
 
-          <div className="bg-cinema-surface border border-cinema-border rounded-xl p-5 text-left space-y-3 mb-8">
-            <p className="text-cinema-text font-semibold text-lg">{showtime.movie?.title}</p>
-            <div className="flex items-center gap-2 text-cinema-text-secondary text-sm">
-              <Clock className="w-4 h-4" />
-              {formatDateTime(showtime.date_time)}
-            </div>
-            <div className="flex items-center gap-2 text-cinema-text-secondary text-sm">
-              <MapPin className="w-4 h-4" />
-              {showtime.theater}
-            </div>
-            <div className="pt-2 border-t border-cinema-border">
-              <p className="text-cinema-text-secondary text-sm mb-1">Seats</p>
-              <div className="flex flex-wrap gap-2">
-                {booking.seats?.map((s) => (
-                  <span key={s.id} className="bg-cinema-accent/20 text-cinema-accent text-xs font-bold px-2 py-1 rounded">
-                    {s.row}{s.number}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="pt-2 border-t border-cinema-border flex items-center justify-between">
-              <span className="text-cinema-text-secondary">Total Paid</span>
-              <span className="text-cinema-text font-bold text-lg">{formatCurrency(booking.total_amount)}</span>
-            </div>
-            <p className="text-cinema-muted text-xs">Booking ID: {booking.id.slice(0, 8).toUpperCase()}</p>
-          </div>
+        <Paper variant="outlined" sx={{ p: 2.5, border: `1px solid ${C.border}`, textAlign: 'left', mb: 4 }}>
+          <Typography fontWeight={700} fontSize="1.125rem" color="text.primary" mb={1.5}>{showtime.movie?.title}</Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: C.textSec }}>
+              <Clock size={16} /><Typography variant="body2">{formatDateTime(showtime.date_time)}</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: C.textSec }}>
+              <MapPin size={16} /><Typography variant="body2">{showtime.theater}</Typography>
+            </Box>
+          </Box>
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="caption" color="text.secondary" mb={1} display="block">Seats</Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+            {booking.seats?.map((s) => (
+              <Box key={s.id} sx={{ bgcolor: `${C.accent}33`, color: C.accent, fontSize: '0.75rem', fontWeight: 700, px: 1.5, py: 0.5, borderRadius: 1 }}>{s.row}{s.number}</Box>
+            ))}
+          </Box>
+          <Divider sx={{ mb: 2 }} />
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography color="text.secondary" variant="body2">Total Paid</Typography>
+            <Typography fontWeight={700} fontSize="1.125rem" color="text.primary">{formatCurrency(booking.total_amount)}</Typography>
+          </Box>
+          <Typography variant="caption" color="text.secondary" mt={1} display="block">Booking ID: {booking.id.slice(0, 8).toUpperCase()}</Typography>
+        </Paper>
 
-          <div className="flex flex-col gap-3">
-            <Link
-              to="/profile"
-              className="w-full bg-cinema-accent hover:bg-cinema-accent-dark text-white font-semibold py-3 rounded-xl transition-colors"
-            >
-              View My Bookings
-            </Link>
-            <Link
-              to="/movies"
-              className="w-full bg-cinema-surface hover:bg-cinema-card text-cinema-text font-medium py-3 rounded-xl border border-cinema-border transition-colors"
-            >
-              Browse More Movies
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Button component={Link} to="/profile" variant="contained" fullWidth size="large" sx={{ borderRadius: 3 }}>View My Bookings</Button>
+          <Button component={Link} to="/movies" variant="outlined" fullWidth size="large" sx={{ borderRadius: 3, borderColor: C.border, color: C.text }}>Browse More Movies</Button>
+        </Box>
+      </Paper>
+    </Box>
+  );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-      {/* Back */}
-      <button
-        onClick={() => (step === 'confirm' ? setStep('seats') : navigate(-1))}
-        className="flex items-center gap-2 text-cinema-text-secondary hover:text-cinema-text text-sm mb-6 transition-colors"
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Button onClick={() => step === 'confirm' ? setStep('seats') : navigate(-1)} startIcon={<ArrowLeft size={16} />}
+        sx={{ color: 'text.secondary', mb: 3, '&:hover': { color: 'text.primary' } }}
       >
-        <ArrowLeft className="w-4 h-4" />
         {step === 'confirm' ? 'Back to Seat Selection' : 'Back'}
-      </button>
+      </Button>
 
       {/* Step indicator */}
-      <div className="flex items-center gap-3 mb-8">
-        {(['seats', 'confirm'] as Step[]).map((s, idx) => (
-          <div key={s} className="flex items-center gap-3">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-                step === s
-                  ? 'bg-cinema-accent text-white'
-                  : step === 'done' || (s === 'seats' && step === 'confirm')
-                  ? 'bg-green-500 text-white'
-                  : 'bg-cinema-surface border border-cinema-border text-cinema-muted'
-              }`}
-            >
-              {(step === 'confirm' && s === 'seats') ? <CheckCircle className="w-4 h-4" /> : idx + 1}
-            </div>
-            <span className={`text-sm font-medium ${step === s ? 'text-cinema-text' : 'text-cinema-muted'}`}>
-              {s === 'seats' ? 'Choose Seats' : 'Confirm Booking'}
-            </span>
-            {idx < 1 && <div className="w-12 h-px bg-cinema-border" />}
-          </div>
-        ))}
-      </div>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+        {(['seats', 'confirm'] as Step[]).map((s, idx) => {
+          const done = s === 'seats' && step === 'confirm';
+          const active = step === s;
+          return (
+            <Box key={s} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.875rem', fontWeight: 700, bgcolor: done || active ? (done ? '#22c55e' : C.accent) : C.surface, border: `1px solid ${active || done ? 'transparent' : C.border}`, color: active || done ? '#fff' : C.muted }}>
+                {done ? <CheckCircle size={16} /> : idx + 1}
+              </Box>
+              <Typography variant="body2" fontWeight={500} color={active ? 'text.primary' : 'text.secondary'}>
+                {s === 'seats' ? 'Choose Seats' : 'Confirm Booking'}
+              </Typography>
+              {idx < 1 && <Box sx={{ width: 48, height: 1, bgcolor: C.border }} />}
+            </Box>
+          );
+        })}
+      </Box>
 
-      <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-        {/* Main content */}
-        <div className="lg:col-span-2">
-          {/* Showtime info card */}
-          <div className="bg-cinema-card border border-cinema-border rounded-xl p-5 mb-6 flex gap-4">
-            <img
-              src={showtime.movie?.poster_url}
-              alt={showtime.movie?.title}
-              className="w-16 h-24 object-cover rounded-lg flex-shrink-0"
-              onError={(e) => (e.currentTarget.style.display = 'none')}
+      <Grid container spacing={4}>
+        <Grid item xs={12} lg={8}>
+          {/* Showtime card */}
+          <Paper variant="outlined" sx={{ p: 2.5, mb: 3, border: `1px solid ${C.border}`, display: 'flex', gap: 2.5 }}>
+            <Box component="img" src={showtime.movie?.poster_url} alt={showtime.movie?.title}
+              onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = 'none'; }}
+              sx={{ width: 64, height: 96, objectFit: 'cover', borderRadius: 2, flexShrink: 0 }}
             />
-            <div className="min-w-0">
-              <h2 className="text-cinema-text font-bold text-xl truncate">{showtime.movie?.title}</h2>
-              <div className="flex items-center gap-3 mt-1 text-sm text-cinema-text-secondary">
-                {showtime.movie?.rating && (
-                  <span className="flex items-center gap-1">
-                    <Star className="w-3.5 h-3.5 text-cinema-gold fill-cinema-gold" />
-                    {formatRating(showtime.movie.rating)}
-                  </span>
-                )}
-                {showtime.movie?.duration && (
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    {formatDuration(showtime.movie.duration)}
-                  </span>
-                )}
-              </div>
-              <div className="mt-2 space-y-1 text-sm">
-                <div className="flex items-center gap-1.5 text-cinema-text-secondary">
-                  <Clock className="w-3.5 h-3.5 text-cinema-accent" />
-                  {formatDateTime(showtime.date_time)}
-                </div>
-                <div className="flex items-center gap-1.5 text-cinema-text-secondary">
-                  <MapPin className="w-3.5 h-3.5 text-cinema-accent" />
-                  {showtime.theater}
-                </div>
-              </div>
-            </div>
-          </div>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography fontWeight={700} fontSize="1.25rem" color="text.primary" noWrap>{showtime.movie?.title}</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.5, color: C.textSec }}>
+                {showtime.movie?.rating && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Star size={14} color={C.gold} fill={C.gold} /><Typography variant="caption">{formatRating(showtime.movie.rating)}</Typography></Box>}
+                {showtime.movie?.duration && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Clock size={14} /><Typography variant="caption">{formatDuration(showtime.movie.duration)}</Typography></Box>}
+              </Box>
+              <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: C.textSec }}><Clock size={14} color={C.accent} /><Typography variant="body2">{formatDateTime(showtime.date_time)}</Typography></Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: C.textSec }}><MapPin size={14} color={C.accent} /><Typography variant="body2">{showtime.theater}</Typography></Box>
+              </Box>
+            </Box>
+          </Paper>
 
           {step === 'seats' && (
-            <div className="bg-cinema-card border border-cinema-border rounded-xl p-6">
-              <h3 className="text-cinema-text font-bold text-lg mb-1">Select Your Seats</h3>
-              <p className="text-cinema-muted text-sm mb-6">
-                You can select up to 8 seats. Click to select, click again to deselect.
-              </p>
-              <SeatMap
-                seats={seats}
-                selectedSeats={selectedSeats}
-                onToggle={toggleSeat}
-              />
-            </div>
+            <Paper variant="outlined" sx={{ p: 3, border: `1px solid ${C.border}` }}>
+              <Typography variant="h6" fontWeight={700} color="text.primary" mb={0.5}>Select Your Seats</Typography>
+              <Typography variant="body2" color="text.secondary" mb={3}>Up to 8 seats. Click to select, click again to deselect.</Typography>
+              <SeatMap seats={seats} selectedSeats={selectedSeats} onToggle={toggleSeat} />
+            </Paper>
           )}
 
           {step === 'confirm' && (
-            <div className="bg-cinema-card border border-cinema-border rounded-xl p-6 space-y-4">
-              <h3 className="text-cinema-text font-bold text-lg">Booking Summary</h3>
+            <Paper variant="outlined" sx={{ p: 3, border: `1px solid ${C.border}` }}>
+              <Typography variant="h6" fontWeight={700} color="text.primary" mb={2}>Booking Summary</Typography>
               {selectedSeatDetails.map((seat) => (
-                <div key={seat.id} className="flex items-center justify-between py-2 border-b border-cinema-border">
-                  <div className="flex items-center gap-3">
-                    <span className="w-10 h-10 rounded-lg bg-cinema-surface border border-cinema-border flex items-center justify-center text-cinema-text font-bold text-sm">
-                      {seat.row}{seat.number}
-                    </span>
-                    <div>
-                      <p className="text-cinema-text text-sm font-medium">Row {seat.row}, Seat {seat.number}</p>
-                      <p className="text-cinema-muted text-xs capitalize">{seat.type} seat</p>
-                    </div>
-                  </div>
-                  <span className="text-cinema-text font-semibold">{formatCurrency(seat.price)}</span>
-                </div>
+                <Box key={seat.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5, borderBottom: `1px solid ${C.border}` }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: C.surface, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Typography variant="body2" fontWeight={700} color="text.primary">{seat.row}{seat.number}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" fontWeight={500} color="text.primary">Row {seat.row}, Seat {seat.number}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>{seat.type} seat</Typography>
+                    </Box>
+                  </Box>
+                  <Typography fontWeight={600} color="text.primary">{formatCurrency(seat.price)}</Typography>
+                </Box>
               ))}
-            </div>
+            </Paper>
           )}
-        </div>
+        </Grid>
 
-        {/* Order summary sidebar */}
-        <div>
-          <div className="bg-cinema-card border border-cinema-border rounded-xl p-5 sticky top-24">
-            <h3 className="text-cinema-text font-bold mb-4 flex items-center gap-2">
-              <Ticket className="w-5 h-5 text-cinema-accent" />
-              Order Summary
-            </h3>
+        {/* Order Summary */}
+        <Grid item xs={12} lg={4}>
+          <Paper variant="outlined" sx={{ p: 2.5, border: `1px solid ${C.border}`, position: 'sticky', top: 88 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <Ticket size={20} color={C.accent} />
+              <Typography fontWeight={700} color="text.primary">Order Summary</Typography>
+            </Box>
 
             {selectedSeatDetails.length === 0 ? (
-              <p className="text-cinema-muted text-sm text-center py-6">No seats selected yet</p>
+              <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 4 }}>No seats selected yet</Typography>
             ) : (
-              <div className="space-y-2 mb-4">
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
                 {selectedSeatDetails.map((seat) => (
-                  <div key={seat.id} className="flex justify-between text-sm">
-                    <span className="text-cinema-text-secondary">
-                      {seat.row}{seat.number} <span className="text-cinema-muted capitalize">({seat.type})</span>
-                    </span>
-                    <span className="text-cinema-text">{formatCurrency(seat.price)}</span>
-                  </div>
+                  <Box key={seat.id} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {seat.row}{seat.number} <Box component="span" sx={{ color: C.muted, textTransform: 'capitalize' }}>({seat.type})</Box>
+                    </Typography>
+                    <Typography variant="body2" color="text.primary">{formatCurrency(seat.price)}</Typography>
+                  </Box>
                 ))}
-              </div>
+              </Box>
             )}
 
-            <div className="border-t border-cinema-border pt-4 mb-5">
-              <div className="flex justify-between items-center">
-                <span className="text-cinema-text font-semibold">Total</span>
-                <span className="text-cinema-text font-bold text-xl">{formatCurrency(totalAmount)}</span>
-              </div>
-              <p className="text-cinema-muted text-xs mt-1">
-                {selectedSeats.length} seat{selectedSeats.length !== 1 ? 's' : ''} selected
-              </p>
-            </div>
+            <Divider sx={{ my: 2 }} />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+              <Typography fontWeight={600} color="text.primary">Total</Typography>
+              <Typography fontWeight={700} fontSize="1.25rem" color="text.primary">{formatCurrency(totalAmount)}</Typography>
+            </Box>
+            <Typography variant="caption" color="text.secondary">{selectedSeats.length} seat{selectedSeats.length !== 1 ? 's' : ''} selected</Typography>
 
-            {step === 'seats' && (
-              <button
-                onClick={() => setStep('confirm')}
-                disabled={selectedSeats.length === 0}
-                className="w-full bg-cinema-accent hover:bg-cinema-accent-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors"
-              >
-                Continue
-              </button>
-            )}
-
-            {step === 'confirm' && (
-              <button
-                onClick={handleConfirm}
-                disabled={submitting}
-                className="w-full bg-cinema-accent hover:bg-cinema-accent-dark disabled:opacity-70 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-              >
-                {submitting ? <LoadingSpinner size="sm" /> : <><Ticket className="w-5 h-5" /> Confirm Booking</>}
-              </button>
-            )}
-
-            <p className="text-cinema-muted text-xs text-center mt-3">
-              By confirming, you agree to our cancellation policy
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+            <Box sx={{ mt: 2.5 }}>
+              {step === 'seats' && (
+                <Button variant="contained" fullWidth size="large" onClick={() => setStep('confirm')} disabled={selectedSeats.length === 0} sx={{ borderRadius: 3 }}>
+                  Continue
+                </Button>
+              )}
+              {step === 'confirm' && (
+                <Button variant="contained" fullWidth size="large" onClick={handleConfirm} disabled={submitting} startIcon={submitting ? <LoadingSpinner size="sm" /> : <Ticket size={18} />} sx={{ borderRadius: 3 }}>
+                  {submitting ? 'Confirming...' : 'Confirm Booking'}
+                </Button>
+              )}
+              <Typography variant="caption" color="text.secondary" display="block" textAlign="center" mt={1.5}>
+                By confirming, you agree to our cancellation policy
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
+    </Container>
   );
 }

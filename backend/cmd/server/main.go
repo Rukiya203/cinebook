@@ -92,7 +92,7 @@ func main() {
 	})
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
-	log.Printf("🎬 CineBook API running on http://localhost%s", addr)
+	log.Printf("CineBook API running on http://localhost%s", addr)
 	if err := http.ListenAndServe(addr, r); err != nil {
 		log.Fatal(err)
 	}

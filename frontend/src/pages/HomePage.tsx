@@ -1,9 +1,18 @@
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import Container from '@mui/material/Container';
+import Grid from '@mui/material/Grid';
+import InputAdornment from '@mui/material/InputAdornment';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import { ArrowRight, Clock, Play, Search, Star, Ticket } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import MovieCard from '../components/movies/MovieCard';
 import movieService from '../services/movieService';
+import { C } from '../theme';
 import type { Movie } from '../types';
 import { formatDuration, formatRating } from '../utils/formatters';
 
@@ -13,173 +22,140 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    movieService.getAll().then(setMovies).finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { movieService.getAll().then(setMovies).finally(() => setLoading(false)); }, []);
 
   const nowShowing = movies.filter((m) => m.is_now_showing);
   const featured = nowShowing[0];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/movies?search=${encodeURIComponent(searchQuery.trim())}`);
-    }
+    if (searchQuery.trim()) navigate(`/movies?search=${encodeURIComponent(searchQuery.trim())}`);
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><LoadingSpinner size="lg" /></Box>;
   }
 
   return (
-    <div className="min-h-screen animate-fade-in">
-      {/* Hero Section */}
+    <Box sx={{ minHeight: '100vh' }}>
+      {/* Hero */}
       {featured && (
-        <section className="relative min-h-[85vh] flex items-end overflow-hidden">
-          {/* Background */}
-          <div className="absolute inset-0">
-            <img
-              src={featured.poster_url}
-              alt={featured.title}
-              className="w-full h-full object-cover object-center scale-105"
-              onError={(e) => (e.currentTarget.style.display = 'none')}
+        <Box component="section" sx={{ position: 'relative', minHeight: '85vh', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+          <Box sx={{ position: 'absolute', inset: 0 }}>
+            <Box component="img" src={featured.poster_url} alt={featured.title} onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = 'none'; }}
+              sx={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.05)' }}
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-cinema-bg via-cinema-bg/80 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-cinema-bg via-cinema-bg/40 to-transparent" />
-          </div>
+            <Box sx={{ position: 'absolute', inset: 0, background: `linear-gradient(to right, ${C.bg}, ${C.bg}cc, transparent)` }} />
+            <Box sx={{ position: 'absolute', inset: 0, background: `linear-gradient(to top, ${C.bg}, ${C.bg}66, transparent)` }} />
+          </Box>
 
-          {/* Content */}
-          <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 pt-32">
-            <div className="max-w-2xl">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 bg-cinema-accent/20 border border-cinema-accent/40 rounded-full px-3 py-1 mb-4">
-                <span className="w-2 h-2 rounded-full bg-cinema-accent animate-pulse" />
-                <span className="text-cinema-accent text-sm font-medium">Featured Film</span>
-              </div>
+          <Container maxWidth="xl" sx={{ position: 'relative', pb: 8, pt: 16 }}>
+            <Box sx={{ maxWidth: 600 }}>
+              <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, bgcolor: `${C.accent}33`, border: `1px solid ${C.accent}66`, borderRadius: 999, px: 1.5, py: 0.5, mb: 2 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: C.accent, animation: 'pulse 2s infinite', '@keyframes pulse': { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.5 } } }} />
+                <Typography variant="caption" fontWeight={500} sx={{ color: C.accent }}>Featured Film</Typography>
+              </Box>
 
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-none tracking-tight mb-4">
+              <Typography variant="h1" fontWeight={900} color="#fff" sx={{ fontSize: { xs: '3rem', sm: '4rem', lg: '5rem' }, lineHeight: 1, letterSpacing: '-2px', mb: 2 }}>
                 {featured.title}
-              </h1>
+              </Typography>
 
-              <div className="flex flex-wrap items-center gap-4 mb-4">
-                <div className="flex items-center gap-1.5">
-                  <Star className="w-5 h-5 text-cinema-gold fill-cinema-gold" />
-                  <span className="text-cinema-gold font-bold text-lg">{formatRating(featured.rating)}</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-cinema-text-secondary">
-                  <Clock className="w-4 h-4" />
-                  <span>{formatDuration(featured.duration)}</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <Star size={20} color={C.gold} fill={C.gold} />
+                  <Typography fontWeight={700} fontSize="1.125rem" sx={{ color: C.gold }}>{formatRating(featured.rating)}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: C.textSec }}>
+                  <Clock size={16} />
+                  <Typography variant="body2">{formatDuration(featured.duration)}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                   {featured.genre.map((g) => (
-                    <span
-                      key={g}
-                      className="text-sm px-3 py-0.5 rounded-full bg-white/10 backdrop-blur-sm text-white border border-white/20"
-                    >
-                      {g}
-                    </span>
+                    <Chip key={g} label={g} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(4px)' }} />
                   ))}
-                </div>
-              </div>
+                </Box>
+              </Box>
 
-              <p className="text-cinema-text-secondary text-lg leading-relaxed mb-8 line-clamp-3">
+              <Typography variant="body1" sx={{ color: C.textSec, mb: 4, lineHeight: 1.7, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                 {featured.description}
-              </p>
+              </Typography>
 
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  to={`/movies/${featured.id}`}
-                  className="flex items-center gap-2 bg-cinema-accent hover:bg-cinema-accent-dark text-white font-semibold px-6 py-3 rounded-xl transition-all hover:shadow-glow-red"
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                <Button component={Link} to={`/movies/${featured.id}`} variant="contained" startIcon={<Ticket size={18} />} size="large"
+                  sx={{ borderRadius: 2.5, px: 3 }}
                 >
-                  <Ticket className="w-5 h-5" />
                   Book Tickets
-                </Link>
-                <Link
-                  to={`/movies/${featured.id}`}
-                  className="flex items-center gap-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white font-semibold px-6 py-3 rounded-xl border border-white/20 transition-all"
+                </Button>
+                <Button component={Link} to={`/movies/${featured.id}`} variant="outlined" startIcon={<Play size={18} />} size="large"
+                  sx={{ borderRadius: 2.5, px: 3, borderColor: 'rgba(255,255,255,0.3)', color: '#fff', bgcolor: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(4px)', '&:hover': { borderColor: 'rgba(255,255,255,0.5)', bgcolor: 'rgba(255,255,255,0.2)' } }}
                 >
-                  <Play className="w-5 h-5" />
                   Details
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
+                </Button>
+              </Box>
+            </Box>
+          </Container>
+        </Box>
       )}
 
-      {/* Search Bar */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-10">
-        <form
-          onSubmit={handleSearch}
-          className="flex gap-2 bg-cinema-card border border-cinema-border rounded-2xl p-2 shadow-card"
+      {/* Search */}
+      <Container maxWidth="xl" sx={{ mt: -3, position: 'relative', zIndex: 10 }}>
+        <Box component="form" onSubmit={handleSearch}
+          sx={{ display: 'flex', gap: 1, bgcolor: 'background.paper', border: `1px solid ${C.border}`, borderRadius: 3, p: 1 }}
         >
-          <div className="flex-1 flex items-center gap-3 px-3">
-            <Search className="w-5 h-5 text-cinema-muted flex-shrink-0" />
-            <input
-              type="text"
-              placeholder="Search movies, directors, genres..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent text-cinema-text placeholder-cinema-muted outline-none text-sm"
-            />
-          </div>
-          <button
-            type="submit"
-            className="bg-cinema-accent hover:bg-cinema-accent-dark text-white font-medium px-6 py-2.5 rounded-xl transition-colors text-sm"
-          >
-            Search
-          </button>
-        </form>
-      </section>
+          <TextField
+            fullWidth variant="outlined" placeholder="Search movies, directors, genres..."
+            value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: <InputAdornment position="start"><Search size={18} color={C.muted} /></InputAdornment>,
+              sx: { '& fieldset': { border: 'none' }, bgcolor: 'transparent' },
+            }}
+          />
+          <Button type="submit" variant="contained" sx={{ borderRadius: 2, px: 3, flexShrink: 0 }}>Search</Button>
+        </Box>
+      </Container>
 
-      {/* Now Showing Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-3xl font-bold text-cinema-text">Now Showing</h2>
-            <p className="text-cinema-text-secondary mt-1">Currently in theaters</p>
-          </div>
-          <Link
-            to="/movies"
-            className="flex items-center gap-1.5 text-cinema-accent hover:text-cinema-accent-dark font-medium text-sm transition-colors"
-          >
-            View All <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
+      {/* Now Showing */}
+      <Container maxWidth="xl" sx={{ mt: 10 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+          <Box>
+            <Typography variant="h4" fontWeight={700} color="text.primary">Now Showing</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Currently in theaters</Typography>
+          </Box>
+          <Button component={Link} to="/movies" endIcon={<ArrowRight size={16} />} sx={{ color: 'primary.main', fontWeight: 600 }}>
+            View All
+          </Button>
+        </Box>
 
         {nowShowing.length === 0 ? (
-          <div className="text-center py-20 text-cinema-muted">No movies found.</div>
+          <Typography color="text.secondary" textAlign="center" sx={{ py: 10 }}>No movies found.</Typography>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+          <Grid container spacing={3}>
             {nowShowing.map((movie) => (
-              <MovieCard key={movie.id} movie={movie} />
+              <Grid item key={movie.id} xs={6} sm={4} md={3} lg={12/5}>
+                <MovieCard movie={movie} />
+              </Grid>
             ))}
-          </div>
+          </Grid>
         )}
-      </section>
+      </Container>
 
       {/* CTA Banner */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-20">
-        <div className="relative bg-gradient-to-r from-cinema-accent/20 via-cinema-surface to-cinema-surface border border-cinema-border rounded-2xl p-10 overflow-hidden">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-cinema-accent/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
-          <div className="relative text-center">
-            <h3 className="text-3xl font-bold text-cinema-text mb-3">Ready for the cinema experience?</h3>
-            <p className="text-cinema-text-secondary mb-6 max-w-lg mx-auto">
+      <Container maxWidth="xl" sx={{ mt: 12, mb: 4 }}>
+        <Box sx={{ position: 'relative', background: `linear-gradient(to right, ${C.accent}33, ${C.surface}, ${C.surface})`, border: `1px solid ${C.border}`, borderRadius: 4, p: { xs: 5, md: 8 }, overflow: 'hidden', textAlign: 'center' }}>
+          <Box sx={{ position: 'absolute', top: 0, left: 0, width: 256, height: 256, bgcolor: `${C.accent}1a`, borderRadius: '50%', transform: 'translate(-50%, -50%)', filter: 'blur(60px)' }} />
+          <Box sx={{ position: 'relative' }}>
+            <Typography variant="h4" fontWeight={700} color="text.primary" mb={1.5}>Ready for the cinema experience?</Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 480, mx: 'auto' }}>
               Choose your seat, pick your showtime, and enjoy the magic of movies on the big screen.
-            </p>
-            <Link
-              to="/movies"
-              className="inline-flex items-center gap-2 bg-cinema-accent hover:bg-cinema-accent-dark text-white font-semibold px-8 py-3 rounded-xl transition-all hover:shadow-glow-red"
+            </Typography>
+            <Button component={Link} to="/movies" variant="contained" size="large" endIcon={<ArrowRight size={18} />}
+              sx={{ borderRadius: 2.5, px: 4 }}
             >
-              Browse All Movies <ArrowRight className="w-5 h-5" />
-            </Link>
-          </div>
-        </div>
-      </section>
-    </div>
+              Browse All Movies
+            </Button>
+          </Box>
+        </Box>
+      </Container>
+    </Box>
   );
 }

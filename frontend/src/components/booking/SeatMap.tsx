@@ -1,5 +1,8 @@
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import type { Seat, SeatType } from '../../types';
 import { formatCurrency } from '../../utils/formatters';
+import { C } from '../../theme';
 
 interface Props {
   seats: Seat[];
@@ -8,56 +11,35 @@ interface Props {
   maxSelectable?: number;
 }
 
-/** Human-readable label for each seat tier shown in the legend and tooltip. */
-const SEAT_TYPE_LABEL: Record<SeatType, string> = {
-  regular: 'Regular',
-  premium: 'Premium',
-  vip: 'VIP',
-};
+const SEAT_TYPE_LABEL: Record<SeatType, string> = { regular: 'Regular', premium: 'Premium', vip: 'VIP' };
 
-/**
- * Returns the Tailwind class string for a seat button based on its booking state and type.
- * Priority: booked > selected > available (by type).
- */
-function getSeatStyle(seat: Seat, isSelected: boolean): string {
-  if (seat.is_booked) {
-    return 'bg-cinema-border/50 text-cinema-muted cursor-not-allowed opacity-50';
-  }
-  if (isSelected) {
-    return 'bg-cinema-accent border-cinema-accent text-white scale-110 shadow-glow-red cursor-pointer';
-  }
+const LEGEND = [
+  { label: 'Available', bg: C.surface,  border: C.border,  opacity: 1   },
+  { label: 'Selected',  bg: C.accent,   border: C.accent,  opacity: 1   },
+  { label: 'Booked',    bg: C.border,   border: C.border,  opacity: 0.5 },
+  { label: 'Premium',   bg: '#1e3a5f',  border: '#2563eb', opacity: 1   },
+  { label: 'VIP',       bg: '#3d2a00',  border: '#ca8a04', opacity: 1   },
+];
+
+function getSeatSx(seat: Seat, isSelected: boolean) {
+  if (seat.is_booked)  return { bgcolor: `${C.border}80`, color: C.muted, cursor: 'not-allowed', opacity: 0.5 };
+  if (isSelected)      return { bgcolor: C.accent, borderColor: C.accent, color: '#fff', transform: 'scale(1.1)', boxShadow: `0 0 12px ${C.accent}60` };
   switch (seat.type) {
-    case 'vip':
-      return 'bg-yellow-900/40 border-yellow-600/60 text-yellow-300 hover:bg-yellow-600 hover:text-white cursor-pointer';
-    case 'premium':
-      return 'bg-blue-900/40 border-blue-600/60 text-blue-300 hover:bg-blue-600 hover:text-white cursor-pointer';
-    default:
-      return 'bg-cinema-surface border-cinema-border text-cinema-text-secondary hover:bg-cinema-accent/80 hover:text-white cursor-pointer';
+    case 'vip':     return { bgcolor: '#3d2a00', borderColor: '#ca8a04', color: '#fde047', '&:hover': { bgcolor: '#ca8a04', color: '#fff' } };
+    case 'premium': return { bgcolor: '#1e3a5f', borderColor: '#2563eb', color: '#93c5fd', '&:hover': { bgcolor: '#2563eb', color: '#fff' } };
+    default:        return { bgcolor: C.surface,  borderColor: C.border,  color: C.textSec, '&:hover': { bgcolor: `${C.accent}cc`, color: '#fff' } };
   }
 }
 
-/** Legend entry colour map — mirrors the colours used in getSeatStyle. */
-const LEGEND_ITEMS = [
-  { label: 'Available',  cls: 'bg-cinema-surface border border-cinema-border' },
-  { label: 'Selected',   cls: 'bg-cinema-accent border border-cinema-accent' },
-  { label: 'Booked',     cls: 'bg-cinema-border/50 opacity-50' },
-  { label: 'Premium',    cls: 'bg-blue-900/40 border border-blue-600/60' },
-  { label: 'VIP',        cls: 'bg-yellow-900/40 border border-yellow-600/60' },
-] as const;
+function rowLabelColor(type?: SeatType) {
+  if (type === 'vip')     return C.gold;
+  if (type === 'premium') return '#93c5fd';
+  return C.textSec;
+}
 
-/**
- * SeatMap renders an interactive theater seat grid.
- *
- * - Seats are grouped into rows (A–H) with an aisle gap after column 6.
- * - Clicking a seat toggles its selection unless it is already booked
- *   or the maxSelectable limit has been reached.
- * - A legend below the grid explains the colour coding.
- */
 export default function SeatMap({ seats, selectedSeats, onToggle, maxSelectable = 8 }: Props) {
-  // Collect unique row labels in alphabetical order.
   const rows = [...new Set(seats.map((s) => s.row))].sort();
 
-  // Group seats by row for easy rendering — O(n) single pass.
   const seatsByRow = seats.reduce<Record<string, Seat[]>>((acc, seat) => {
     (acc[seat.row] ??= []).push(seat);
     return acc;
@@ -65,83 +47,73 @@ export default function SeatMap({ seats, selectedSeats, onToggle, maxSelectable 
 
   const handleClick = (seat: Seat) => {
     if (seat.is_booked) return;
-    // Prevent selecting more than the allowed maximum.
     if (!selectedSeats.includes(seat.id) && selectedSeats.length >= maxSelectable) return;
     onToggle(seat.id);
   };
 
-  /** Returns the colour class for the row label based on seat tier. */
-  const rowLabelColour = (row: string) => {
-    const type = seatsByRow[row]?.[0]?.type;
-    if (type === 'vip') return 'text-yellow-400';
-    if (type === 'premium') return 'text-blue-400';
-    return 'text-cinema-text-secondary';
-  };
-
   return (
-    <div className="space-y-6">
-      {/* Screen indicator */}
-      <div className="flex flex-col items-center gap-1">
-        <div className="w-3/4 h-2 bg-gradient-to-r from-transparent via-cinema-accent/60 to-transparent rounded-full" />
-        <div className="w-full h-px bg-gradient-to-r from-transparent via-cinema-border to-transparent" />
-        <span className="text-xs text-cinema-muted font-medium tracking-widest uppercase">Screen</span>
-      </div>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Screen */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+        <Box sx={{ width: '75%', height: 8, background: `linear-gradient(to right, transparent, ${C.accent}99, transparent)`, borderRadius: 4 }} />
+        <Box sx={{ width: '100%', height: 1, background: `linear-gradient(to right, transparent, ${C.border}, transparent)` }} />
+        <Typography variant="caption" sx={{ color: C.muted, letterSpacing: 4, textTransform: 'uppercase', fontWeight: 500 }}>Screen</Typography>
+      </Box>
 
-      {/* Seat grid — horizontally scrollable on small screens */}
-      <div className="overflow-x-auto pb-2">
-        <div className="min-w-max mx-auto space-y-2">
+      {/* Seat grid */}
+      <Box sx={{ overflowX: 'auto', pb: 1 }}>
+        <Box sx={{ minWidth: 'max-content', mx: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
           {rows.map((row) => (
-            <div key={row} className="flex items-center gap-2">
-              {/* Left row label */}
-              <span className={`w-5 text-xs font-bold text-right flex-shrink-0 ${rowLabelColour(row)}`}>
+            <Box key={row} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="caption" fontWeight={700} sx={{ width: 20, textAlign: 'right', flexShrink: 0, color: rowLabelColor(seatsByRow[row]?.[0]?.type) }}>
                 {row}
-              </span>
-
-              {/* Seats with an aisle gap after seat 6 */}
-              <div className="flex gap-1.5">
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 0.75 }}>
                 {[...seatsByRow[row]]
                   .sort((a, b) => a.number - b.number)
                   .map((seat, idx) => (
-                    <div key={seat.id} className="flex gap-1.5">
-                      {idx === 6 && <div className="w-4" aria-hidden />}
-                      <button
+                    <Box key={seat.id} sx={{ display: 'flex', gap: 0.75 }}>
+                      {idx === 6 && <Box sx={{ width: 16 }} aria-hidden />}
+                      <Box
+                        component="button"
                         onClick={() => handleClick(seat)}
                         disabled={seat.is_booked}
-                        title={
-                          seat.is_booked
-                            ? 'Already booked'
-                            : `${SEAT_TYPE_LABEL[seat.type]} — ${formatCurrency(seat.price)}`
-                        }
+                        title={seat.is_booked ? 'Already booked' : `${SEAT_TYPE_LABEL[seat.type]} — ${formatCurrency(seat.price)}`}
                         aria-label={`Row ${seat.row} Seat ${seat.number}`}
-                        className={`w-7 h-7 rounded-t-lg border text-xs font-medium transition-all duration-150 ${getSeatStyle(
-                          seat,
-                          selectedSeats.includes(seat.id)
-                        )}`}
+                        sx={{
+                          width: 28, height: 28,
+                          border: '1px solid',
+                          borderRadius: '6px 6px 2px 2px',
+                          fontSize: '0.6875rem',
+                          fontWeight: 600,
+                          cursor: seat.is_booked ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.15s',
+                          p: 0,
+                          ...getSeatSx(seat, selectedSeats.includes(seat.id)),
+                        }}
                       >
                         {seat.is_booked ? '×' : seat.number}
-                      </button>
-                    </div>
+                      </Box>
+                    </Box>
                   ))}
-              </div>
-
-              {/* Right row label */}
-              <span className={`w-5 text-xs font-bold flex-shrink-0 ${rowLabelColour(row)}`}>
+              </Box>
+              <Typography variant="caption" fontWeight={700} sx={{ width: 20, flexShrink: 0, color: rowLabelColor(seatsByRow[row]?.[0]?.type) }}>
                 {row}
-              </span>
-            </div>
+              </Typography>
+            </Box>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Legend */}
-      <div className="flex flex-wrap justify-center gap-4 text-xs">
-        {LEGEND_ITEMS.map(({ label, cls }) => (
-          <div key={label} className="flex items-center gap-1.5">
-            <div className={`w-5 h-5 rounded-t-md ${cls}`} />
-            <span className="text-cinema-text-secondary">{label}</span>
-          </div>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 2.5 }}>
+        {LEGEND.map(({ label, bg, border, opacity }) => (
+          <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, opacity: opacity ?? 1 }}>
+            <Box sx={{ width: 20, height: 20, bgcolor: bg, border: `1px solid ${border}`, borderRadius: '4px 4px 1px 1px' }} />
+            <Typography variant="caption" color="text.secondary">{label}</Typography>
+          </Box>
         ))}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

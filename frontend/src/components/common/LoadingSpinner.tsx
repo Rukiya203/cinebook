@@ -1,20 +1,16 @@
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+
 interface Props {
   size?: 'sm' | 'md' | 'lg';
-  className?: string;
 }
 
-const sizes = {
-  sm: 'w-5 h-5 border-2',
-  md: 'w-8 h-8 border-2',
-  lg: 'w-12 h-12 border-3',
-};
+const PX: Record<NonNullable<Props['size']>, number> = { sm: 20, md: 32, lg: 48 };
 
-export default function LoadingSpinner({ size = 'md', className = '' }: Props) {
+export default function LoadingSpinner({ size = 'md' }: Props) {
   return (
-    <div className={`flex items-center justify-center ${className}`}>
-      <div
-        className={`${sizes[size]} rounded-full border-cinema-border border-t-cinema-accent animate-spin`}
-      />
-    </div>
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <CircularProgress size={PX[size]} color="primary" thickness={4} />
+    </Box>
   );
 }

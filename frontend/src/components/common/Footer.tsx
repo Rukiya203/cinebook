@@ -1,34 +1,47 @@
+import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
+import Typography from '@mui/material/Typography';
 import { Film } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { C } from '../../theme';
 
 export default function Footer() {
   return (
-    <footer className="bg-cinema-card border-t border-cinema-border mt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-cinema-accent rounded-lg flex items-center justify-center">
-              <Film className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-lg font-bold text-cinema-text">
-              Cine<span className="text-cinema-accent">Book</span>
-            </span>
-          </Link>
+    <Box
+      component="footer"
+      sx={{ bgcolor: 'background.paper', borderTop: `1px solid ${C.border}`, mt: 10 }}
+    >
+      <Container maxWidth="xl" sx={{ py: 5 }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', justifyContent: 'space-between', gap: 3 }}>
+          {/* Logo */}
+          <Box component={Link} to="/" sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}>
+            <Box sx={{ width: 28, height: 28, bgcolor: 'primary.main', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Film size={16} color="#fff" />
+            </Box>
+            <Typography variant="h6" fontWeight={700} color="text.primary">
+              Cine<Box component="span" sx={{ color: 'primary.main' }}>Book</Box>
+            </Typography>
+          </Box>
 
-          <p className="text-cinema-muted text-sm">
+          <Typography variant="body2" color="text.secondary">
             © {new Date().getFullYear()} CineBook. All rights reserved.
-          </p>
+          </Typography>
 
-          <nav className="flex items-center gap-6">
-            <Link to="/movies" className="text-sm text-cinema-text-secondary hover:text-cinema-text transition-colors">
-              Movies
-            </Link>
-            <Link to="/auth" className="text-sm text-cinema-text-secondary hover:text-cinema-text transition-colors">
-              Sign In
-            </Link>
-          </nav>
-        </div>
-      </div>
-    </footer>
+          <Box sx={{ display: 'flex', gap: 3 }}>
+            {[{ label: 'Movies', to: '/movies' }, { label: 'Sign In', to: '/auth' }].map(({ label, to }) => (
+              <Typography
+                key={label}
+                component={Link}
+                to={to}
+                variant="body2"
+                sx={{ color: 'text.secondary', textDecoration: 'none', '&:hover': { color: 'text.primary' } }}
+              >
+                {label}
+              </Typography>
+            ))}
+          </Box>
+        </Box>
+      </Container>
+    </Box>
   );
 }

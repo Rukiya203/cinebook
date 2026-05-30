@@ -1,12 +1,21 @@
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import Container from '@mui/material/Container';
+import Grid from '@mui/material/Grid';
+import InputAdornment from '@mui/material/InputAdornment';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import MovieCard from '../components/movies/MovieCard';
 import movieService from '../services/movieService';
+import { C } from '../theme';
 import type { Movie } from '../types';
 
-const GENRES = ['Action', 'Adventure', 'Animation', 'Biography', 'Comedy', 'Crime', 'Drama', 'Fantasy', 'History', 'Romance', 'Sci-Fi', 'Superhero', 'Thriller'];
+const GENRES = ['Action','Adventure','Animation','Biography','Comedy','Crime','Drama','Fantasy','History','Romance','Sci-Fi','Superhero','Thriller'];
 
 export default function MoviesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -18,148 +27,109 @@ export default function MoviesPage() {
 
   useEffect(() => {
     setLoading(true);
-    movieService
-      .getAll({ genre: activeGenre || undefined, search: search || undefined })
-      .then(setMovies)
-      .finally(() => setLoading(false));
+    movieService.getAll({ genre: activeGenre || undefined, search: search || undefined })
+      .then(setMovies).finally(() => setLoading(false));
   }, [search, activeGenre]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setSearch(inputValue.trim());
-    setActiveGenre('');
+    setSearch(inputValue.trim()); setActiveGenre('');
     setSearchParams(inputValue.trim() ? { search: inputValue.trim() } : {});
   };
 
   const handleGenreClick = (genre: string) => {
     const next = activeGenre === genre ? '' : genre;
-    setActiveGenre(next);
-    setSearch('');
-    setInputValue('');
+    setActiveGenre(next); setSearch(''); setInputValue('');
     setSearchParams(next ? { genre: next } : {});
   };
 
-  const clearFilters = () => {
-    setSearch('');
-    setInputValue('');
-    setActiveGenre('');
-    setSearchParams({});
-  };
-
-  const hasFilters = search || activeGenre;
+  const clearFilters = () => { setSearch(''); setInputValue(''); setActiveGenre(''); setSearchParams({}); };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-fade-in">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-cinema-text">Movies</h1>
-        <p className="text-cinema-text-secondary mt-2">
+    <Container maxWidth="xl" sx={{ py: 5 }}>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h3" fontWeight={700} color="text.primary">Movies</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
           {loading ? 'Loading...' : `${movies.length} movie${movies.length !== 1 ? 's' : ''} available`}
-        </p>
-      </div>
+        </Typography>
+      </Box>
 
       {/* Search */}
-      <form onSubmit={handleSearchSubmit} className="flex gap-2 mb-6">
-        <div className="flex-1 flex items-center gap-3 bg-cinema-card border border-cinema-border rounded-xl px-4 py-3 focus-within:border-cinema-accent/60 transition-colors">
-          <Search className="w-4 h-4 text-cinema-muted flex-shrink-0" />
-          <input
-            type="text"
-            placeholder="Search movies..."
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            className="flex-1 bg-transparent text-cinema-text placeholder-cinema-muted outline-none text-sm"
-          />
-          {inputValue && (
-            <button type="button" onClick={() => setInputValue('')} className="text-cinema-muted hover:text-cinema-text">
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-        <button
-          type="submit"
-          className="bg-cinema-accent hover:bg-cinema-accent-dark text-white font-medium px-5 py-3 rounded-xl transition-colors text-sm"
-        >
-          Search
-        </button>
-      </form>
+      <Box component="form" onSubmit={handleSearchSubmit} sx={{ display: 'flex', gap: 1.5, mb: 3 }}>
+        <TextField
+          fullWidth placeholder="Search movies..." value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          InputProps={{
+            startAdornment: <InputAdornment position="start"><Search size={16} color={C.muted} /></InputAdornment>,
+            endAdornment: inputValue ? (
+              <InputAdornment position="end">
+                <Box component="button" type="button" onClick={() => setInputValue('')}
+                  sx={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, display: 'flex', '&:hover': { color: C.text } }}
+                >
+                  <X size={16} />
+                </Box>
+              </InputAdornment>
+            ) : null,
+          }}
+        />
+        <Button type="submit" variant="contained" sx={{ px: 4, flexShrink: 0 }}>Search</Button>
+      </Box>
 
       {/* Genre filters */}
-      <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
-        <div className="flex items-center gap-1.5 text-cinema-muted flex-shrink-0">
-          <SlidersHorizontal className="w-4 h-4" />
-        </div>
-        <button
-          onClick={() => handleGenreClick('')}
-          className={`flex-shrink-0 text-sm px-4 py-1.5 rounded-full border font-medium transition-all ${
-            !activeGenre
-              ? 'bg-cinema-accent border-cinema-accent text-white'
-              : 'border-cinema-border text-cinema-text-secondary hover:border-cinema-accent/50 hover:text-cinema-text'
-          }`}
-        >
-          All
-        </button>
-        {GENRES.map((g) => (
-          <button
-            key={g}
-            onClick={() => handleGenreClick(g)}
-            className={`flex-shrink-0 text-sm px-4 py-1.5 rounded-full border font-medium transition-all ${
-              activeGenre === g
-                ? 'bg-cinema-accent border-cinema-accent text-white'
-                : 'border-cinema-border text-cinema-text-secondary hover:border-cinema-accent/50 hover:text-cinema-text'
-            }`}
-          >
-            {g}
-          </button>
-        ))}
-      </div>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 4, overflowX: 'auto', pb: 1, '&::-webkit-scrollbar': { display: 'none' } }}>
+        <SlidersHorizontal size={16} color={C.muted} style={{ flexShrink: 0 }} />
+        {['All', ...GENRES].map((g) => {
+          const isActive = g === 'All' ? !activeGenre : activeGenre === g;
+          return (
+            <Chip key={g} label={g} onClick={() => handleGenreClick(g === 'All' ? '' : g)} clickable
+              sx={{
+                flexShrink: 0, fontWeight: 600, borderRadius: 999,
+                bgcolor: isActive ? 'primary.main' : 'transparent',
+                color: isActive ? '#fff' : C.textSec,
+                border: `1px solid ${isActive ? C.accent : C.border}`,
+                '&:hover': { bgcolor: isActive ? 'primary.dark' : `${C.accent}22` },
+              }}
+            />
+          );
+        })}
+      </Box>
 
-      {/* Active filters indicator */}
-      {hasFilters && (
-        <div className="flex items-center gap-2 mb-6 animate-fade-in">
-          <span className="text-sm text-cinema-text-secondary">Filtered by:</span>
+      {/* Active filter indicator */}
+      {(search || activeGenre) && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+          <Typography variant="body2" color="text.secondary">Filtered by:</Typography>
           {search && (
-            <span className="inline-flex items-center gap-1.5 bg-cinema-surface border border-cinema-border rounded-full px-3 py-1 text-sm text-cinema-text">
-              "{search}"
-              <button onClick={clearFilters}>
-                <X className="w-3 h-3 text-cinema-muted hover:text-cinema-accent" />
-              </button>
-            </span>
+            <Chip label={`"${search}"`} size="small" onDelete={clearFilters}
+              sx={{ bgcolor: C.surface, border: `1px solid ${C.border}`, color: C.text }}
+            />
           )}
           {activeGenre && (
-            <span className="inline-flex items-center gap-1.5 bg-cinema-surface border border-cinema-border rounded-full px-3 py-1 text-sm text-cinema-text">
-              {activeGenre}
-              <button onClick={clearFilters}>
-                <X className="w-3 h-3 text-cinema-muted hover:text-cinema-accent" />
-              </button>
-            </span>
+            <Chip label={activeGenre} size="small" onDelete={clearFilters}
+              sx={{ bgcolor: C.surface, border: `1px solid ${C.border}`, color: C.text }}
+            />
           )}
-        </div>
+        </Box>
       )}
 
       {/* Grid */}
       {loading ? (
-        <div className="flex justify-center py-20">
-          <LoadingSpinner size="lg" />
-        </div>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}><LoadingSpinner size="lg" /></Box>
       ) : movies.length === 0 ? (
-        <div className="text-center py-24">
-          <p className="text-5xl mb-4">🎬</p>
-          <p className="text-cinema-text font-semibold text-xl mb-2">No movies found</p>
-          <p className="text-cinema-muted mb-6">Try a different search or genre</p>
-          <button
-            onClick={clearFilters}
-            className="text-cinema-accent hover:underline text-sm font-medium"
-          >
-            Clear filters
-          </button>
-        </div>
+        <Box sx={{ textAlign: 'center', py: 15 }}>
+          <Typography variant="h2" sx={{ mb: 2 }}>🎬</Typography>
+          <Typography variant="h5" fontWeight={600} color="text.primary" mb={1}>No movies found</Typography>
+          <Typography variant="body2" color="text.secondary" mb={3}>Try a different search or genre</Typography>
+          <Button onClick={clearFilters} sx={{ color: 'primary.main', fontWeight: 600 }}>Clear filters</Button>
+        </Box>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6 animate-fade-in">
+        <Grid container spacing={3}>
           {movies.map((movie) => (
-            <MovieCard key={movie.id} movie={movie} />
+            <Grid item key={movie.id} xs={6} sm={4} md={3} lg={12/5}>
+              <MovieCard movie={movie} />
+            </Grid>
           ))}
-        </div>
+        </Grid>
       )}
-    </div>
+    </Container>
   );
 }

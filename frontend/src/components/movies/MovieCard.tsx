@@ -1,77 +1,79 @@
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import Chip from '@mui/material/Chip';
+import Typography from '@mui/material/Typography';
 import { Clock, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Movie } from '../../types';
 import { formatDuration, formatRating } from '../../utils/formatters';
+import { C } from '../../theme';
 
-interface Props {
-  movie: Movie;
-}
-
-export default function MovieCard({ movie }: Props) {
+export default function MovieCard({ movie }: { movie: Movie }) {
   return (
-    <Link
+    <Card
+      component={Link}
       to={`/movies/${movie.id}`}
-      className="group block bg-cinema-card border border-cinema-border rounded-xl overflow-hidden hover:border-cinema-accent/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-card"
+      sx={{
+        display: 'block',
+        textDecoration: 'none',
+        border: `1px solid ${C.border}`,
+        borderRadius: 3,
+        overflow: 'hidden',
+        transition: 'all 0.3s',
+        '&:hover': { borderColor: `${C.accent}80`, transform: 'translateY(-4px)', boxShadow: `0 8px 30px ${C.accent}20` },
+      }}
     >
       {/* Poster */}
-      <div className="relative aspect-[2/3] overflow-hidden bg-cinema-surface">
-        <img
+      <Box sx={{ position: 'relative', aspectRatio: '2/3', bgcolor: C.surface, overflow: 'hidden' }}>
+        <Box
+          component="img"
           src={movie.poster_url}
           alt={movie.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
-          onError={(e) => {
-            const target = e.currentTarget;
-            target.style.display = 'none';
-            target.nextElementSibling?.classList.remove('hidden');
-          }}
+          onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = 'none'; }}
+          sx={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s', '.MuiCard-root:hover &': { transform: 'scale(1.05)' } }}
         />
-        {/* Fallback gradient poster */}
-        <div className="hidden absolute inset-0 bg-gradient-to-br from-cinema-surface via-cinema-card to-cinema-bg flex items-center justify-center">
-          <span className="text-cinema-text-secondary text-sm font-medium text-center px-4">{movie.title}</span>
-        </div>
 
         {/* Rating badge */}
-        <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm rounded-md px-2 py-1">
-          <Star className="w-3 h-3 text-cinema-gold fill-cinema-gold" />
-          <span className="text-xs font-bold text-cinema-gold">{formatRating(movie.rating)}</span>
-        </div>
+        <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', borderRadius: 1, px: 1, py: 0.5 }}>
+          <Star size={12} color={C.gold} fill={C.gold} />
+          <Typography variant="caption" fontWeight={700} sx={{ color: C.gold }}>{formatRating(movie.rating)}</Typography>
+        </Box>
 
         {/* Now Showing badge */}
         {movie.is_now_showing && (
-          <div className="absolute top-2 left-2 bg-cinema-accent text-white text-xs font-semibold px-2 py-1 rounded-md">
-            Now Showing
-          </div>
+          <Chip label="Now Showing" size="small" color="primary"
+            sx={{ position: 'absolute', top: 8, left: 8, height: 24, fontSize: '0.6875rem', fontWeight: 700 }}
+          />
         )}
 
         {/* Hover overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-          <span className="text-white font-semibold text-sm">View Details →</span>
-        </div>
-      </div>
+        <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', opacity: 0, transition: 'opacity 0.3s', '.MuiCard-root:hover &': { opacity: 1 }, display: 'flex', alignItems: 'flex-end', p: 2 }}>
+          <Typography variant="body2" fontWeight={600} color="#fff">View Details →</Typography>
+        </Box>
+      </Box>
 
       {/* Info */}
-      <div className="p-4">
-        <h3 className="font-semibold text-cinema-text text-base leading-tight truncate group-hover:text-cinema-accent transition-colors">
+      <Box sx={{ p: 2 }}>
+        <Typography variant="body1" fontWeight={600} color="text.primary" noWrap
+          sx={{ '.MuiCard-root:hover &': { color: 'primary.main' }, transition: 'color 0.15s' }}
+        >
           {movie.title}
-        </h3>
+        </Typography>
 
-        <div className="mt-1 flex items-center gap-2 text-cinema-muted">
-          <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-          <span className="text-xs">{formatDuration(movie.duration)}</span>
-        </div>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, color: C.muted }}>
+          <Clock size={14} />
+          <Typography variant="caption">{formatDuration(movie.duration)}</Typography>
+        </Box>
 
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1.5 }}>
           {movie.genre.slice(0, 2).map((g) => (
-            <span
-              key={g}
-              className="text-xs px-2 py-0.5 rounded-full bg-cinema-surface border border-cinema-border text-cinema-text-secondary"
-            >
-              {g}
-            </span>
+            <Chip key={g} label={g} size="small"
+              sx={{ height: 20, fontSize: '0.6875rem', bgcolor: C.surface, border: `1px solid ${C.border}`, color: C.textSec }}
+            />
           ))}
-        </div>
-      </div>
-    </Link>
+        </Box>
+      </Box>
+    </Card>
   );
 }
