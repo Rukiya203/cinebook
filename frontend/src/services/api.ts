@@ -2,10 +2,11 @@ import axios from 'axios';
 
 /**
  * Shared Axios instance used by all service modules.
- * Base URL points to the Vite proxy (/api → localhost:8080/api).
+ * In development the Vite proxy forwards /api → localhost:8080.
+ * In production VITE_API_URL is set to the deployed backend URL.
  */
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: { 'Content-Type': 'application/json' },
 });
 

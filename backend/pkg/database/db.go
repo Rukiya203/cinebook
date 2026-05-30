@@ -14,10 +14,14 @@ import (
 var migrationFS embed.FS
 
 func Connect(cfg *config.Config) (*pgxpool.Pool, error) {
-	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName,
-	)
+	// DATABASE_URL (provided by Neon/Render/Railway) takes precedence over individual fields.
+	dsn := cfg.DBURL
+	if dsn == "" {
+		dsn = fmt.Sprintf(
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+			cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName,
+		)
+	}
 
 	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
