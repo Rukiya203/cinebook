@@ -2,26 +2,63 @@ import Box from '@oxygen-ui/react/Box';
 import Button from '@oxygen-ui/react/Button';
 import CircularProgress from '@oxygen-ui/react/CircularProgress';
 import Typography from '@oxygen-ui/react/Typography';
-import { MessageCircle, Send, X, Sparkles } from 'lucide-react';
+import { CheckCircle, MessageCircle, Send, Sparkles, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { type ChatMessage, sendMessage } from '../../services/chatService';
+import { type ChatBooking, type ChatMessage, sendMessage } from '../../services/chatService';
 import { C } from '../../theme';
 
 const SUGGESTIONS = [
-  "What's a good action movie?",
-  'Recommend something under 2 hours',
-  'Best rated film right now?',
-  "I'm in the mood for something funny",
+  'Book a movie for me',
+  "What's good right now?",
+  'Recommend a thriller',
+  'Something under 2 hours',
 ];
 
 const WELCOME: ChatMessage = {
   role: 'assistant',
-  content: "Hey! I'm CineBot 🎬 Tell me what you're in the mood for and I'll find the perfect film for you. You can describe a feeling, a genre, a favourite actor — anything!",
+  content: "Hey! I'm CineBot 🎬 I can recommend movies AND book tickets for you. Just tell me what you're in the mood for!",
 };
+
+interface DisplayMessage {
+  role: 'user' | 'assistant' | 'booking';
+  content: string;
+  booking?: ChatBooking;
+}
+
+function BookingCard({ booking }: { booking: ChatBooking }) {
+  const seats = booking.seats?.map((s) => `${s.row}${s.number}`).join(', ') ?? '—';
+  const date = booking.showtime?.date_time
+    ? new Date(booking.showtime.date_time).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    : '';
+  return (
+    <Box sx={{ border: `1px solid ${C.accent}66`, borderRadius: 2, p: 2, bgcolor: `${C.accent}0d`, mt: 0.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+        <CheckCircle size={16} color="#22c55e" />
+        <Typography variant="body2" fontWeight={700} color="#22c55e">Booking Confirmed!</Typography>
+      </Box>
+      {booking.movie && (
+        <Typography variant="body2" fontWeight={600} color="text.primary" mb={0.5}>{booking.movie.title}</Typography>
+      )}
+      {booking.showtime && (
+        <>
+          <Typography variant="caption" color="text.secondary">{booking.showtime.theater}</Typography>
+          {date && <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{date}</Typography>}
+        </>
+      )}
+      <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="caption" color="text.secondary">Seats: {seats}</Typography>
+        <Typography variant="body2" fontWeight={700} color={C.gold}>${booking.total_amount.toFixed(2)}</Typography>
+      </Box>
+      <Typography variant="caption" sx={{ color: C.muted, mt: 0.5, display: 'block' }}>
+        Ref: #{booking.id.slice(0, 8).toUpperCase()}
+      </Typography>
+    </Box>
+  );
+}
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
+  const [messages, setMessages] = useState<DisplayMessage[]>([{ role: 'assistant', content: WELCOME.content }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -39,15 +76,27 @@ export default function ChatWidget() {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
 
-    const userMsg: ChatMessage = { role: 'user', content: trimmed };
-    const next = [...messages, userMsg];
+    const userDisplay: DisplayMessage = { role: 'user', content: trimmed };
+    const next = [...messages, userDisplay];
     setMessages(next);
     setInput('');
     setLoading(true);
 
+    // Build chat history for the API (user/assistant only, skip booking cards)
+    const apiHistory: ChatMessage[] = next
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+
     try {
-      const reply = await sendMessage(next.filter((m) => m.role !== 'assistant' || m !== WELCOME));
-      setMessages([...next, { role: 'assistant', content: reply }]);
+      const result = await sendMessage(apiHistory);
+      const updated: DisplayMessage[] = [
+        ...next,
+        { role: 'assistant', content: result.message },
+      ];
+      if (result.booking) {
+        updated.push({ role: 'booking', content: '', booking: result.booking });
+      }
+      setMessages(updated);
     } catch {
       setMessages([...next, { role: 'assistant', content: "Sorry, I couldn't connect right now. Please try again!" }]);
     } finally {
@@ -67,8 +116,8 @@ export default function ChatWidget() {
       {open && (
         <Box sx={{
           position: 'fixed', bottom: 88, right: 24, zIndex: 1300,
-          width: { xs: 'calc(100vw - 48px)', sm: 380 },
-          height: 520,
+          width: { xs: 'calc(100vw - 48px)', sm: 390 },
+          height: 540,
           bgcolor: C.card,
           border: `1px solid ${C.border}`,
           borderRadius: 3,
@@ -85,37 +134,46 @@ export default function ChatWidget() {
             </Box>
             <Box sx={{ flex: 1 }}>
               <Typography variant="body1" fontWeight={700} color="text.primary">CineBot</Typography>
-              <Typography variant="caption" color="text.secondary">AI movie assistant</Typography>
+              <Typography variant="caption" color="text.secondary">AI assistant · can book tickets</Typography>
             </Box>
             <Box component="button" onClick={() => setOpen(false)}
-              sx={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, display: 'flex', p: 0.5, borderRadius: 1, '&:hover': { color: C.text, bgcolor: `${C.border}` } }}>
+              sx={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, display: 'flex', p: 0.5, borderRadius: 1, '&:hover': { color: C.text, bgcolor: C.border } }}>
               <X size={18} />
             </Box>
           </Box>
 
           {/* Messages */}
-          <Box sx={{ flex: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 1.5,
+          <Box sx={{
+            flex: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 1.5,
             '&::-webkit-scrollbar': { width: 4 },
-            '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
             '&::-webkit-scrollbar-thumb': { bgcolor: C.border, borderRadius: 2 },
           }}>
-            {messages.map((msg, i) => (
-              <Box key={i} sx={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                <Box sx={{
-                  maxWidth: '82%', px: 2, py: 1.25,
-                  bgcolor: msg.role === 'user' ? C.accent : C.surface,
-                  color: msg.role === 'user' ? '#fff' : C.text,
-                  borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                  border: msg.role === 'assistant' ? `1px solid ${C.border}` : 'none',
-                  fontSize: '0.875rem',
-                  lineHeight: 1.6,
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                }}>
-                  {msg.content}
+            {messages.map((msg, i) => {
+              if (msg.role === 'booking' && msg.booking) {
+                return (
+                  <Box key={i} sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+                    <Box sx={{ maxWidth: '90%' }}>
+                      <BookingCard booking={msg.booking} />
+                    </Box>
+                  </Box>
+                );
+              }
+              return (
+                <Box key={i} sx={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  <Box sx={{
+                    maxWidth: '82%', px: 2, py: 1.25,
+                    bgcolor: msg.role === 'user' ? C.accent : C.surface,
+                    color: msg.role === 'user' ? '#fff' : C.text,
+                    borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                    border: msg.role === 'assistant' ? `1px solid ${C.border}` : 'none',
+                    fontSize: '0.875rem', lineHeight: 1.6,
+                    whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                  }}>
+                    {msg.content}
+                  </Box>
                 </Box>
-              </Box>
-            ))}
+              );
+            })}
 
             {/* Typing indicator */}
             {loading && (
@@ -135,8 +193,7 @@ export default function ChatWidget() {
                     sx={{
                       background: 'none', border: `1px solid ${C.border}`, cursor: 'pointer',
                       color: C.textSec, borderRadius: 999, px: 1.5, py: 0.5,
-                      fontSize: '0.75rem', fontWeight: 500,
-                      transition: 'all 0.15s',
+                      fontSize: '0.75rem', fontWeight: 500, transition: 'all 0.15s',
                       '&:hover': { borderColor: C.accent, color: C.accent, bgcolor: `${C.accent}11` },
                     }}>
                     {s}
@@ -156,7 +213,7 @@ export default function ChatWidget() {
               value={input}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
               onKeyDown={handleKey}
-              placeholder="Ask me anything about movies…"
+              placeholder="Ask me anything or say 'book a movie'…"
               disabled={loading}
               sx={{
                 flex: 1, bgcolor: C.surface, border: `1px solid ${C.border}`,
@@ -167,12 +224,8 @@ export default function ChatWidget() {
                 '&:disabled': { opacity: 0.5 },
               }}
             />
-            <Button
-              variant="contained"
-              onClick={() => send(input)}
-              disabled={!input.trim() || loading}
-              sx={{ minWidth: 44, width: 44, height: 44, p: 0, borderRadius: 2, flexShrink: 0 }}
-            >
+            <Button variant="contained" onClick={() => send(input)} disabled={!input.trim() || loading}
+              sx={{ minWidth: 44, width: 44, height: 44, p: 0, borderRadius: 2, flexShrink: 0 }}>
               <Send size={16} />
             </Button>
           </Box>
@@ -180,9 +233,7 @@ export default function ChatWidget() {
       )}
 
       {/* FAB */}
-      <Box
-        component="button"
-        onClick={() => setOpen((v) => !v)}
+      <Box component="button" onClick={() => setOpen((v) => !v)}
         sx={{
           position: 'fixed', bottom: 24, right: 24, zIndex: 1300,
           width: 56, height: 56, borderRadius: '50%',
@@ -193,8 +244,7 @@ export default function ChatWidget() {
           transition: 'all 0.2s',
           '&:hover': { bgcolor: C.accentDark, transform: 'scale(1.08)' },
           '&:active': { transform: 'scale(0.96)' },
-        }}
-      >
+        }}>
         {open ? <X size={22} color="#fff" /> : <MessageCircle size={22} color="#fff" />}
       </Box>
     </>
