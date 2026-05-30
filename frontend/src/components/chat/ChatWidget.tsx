@@ -67,6 +67,68 @@ function groupByDate(msgs: HistoryMessage[]): { label: string; items: HistoryMes
   return Array.from(map.entries()).map(([label, items]) => ({ label, items }));
 }
 
+// ── Markdown renderer ─────────────────────────────────────────────────────────
+// Handles the subset of markdown CineBot produces: **bold**, numbered lists,
+// bullet lists, and plain paragraphs. No external dependency needed.
+
+function parseBold(line: string): React.ReactNode[] {
+  return line.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
+    part.startsWith('**') && part.endsWith('**')
+      ? <strong key={i} style={{ fontWeight: 700 }}>{part.slice(2, -2)}</strong>
+      : part as React.ReactNode
+  );
+}
+
+function renderContent(text: string, isUser: boolean): React.ReactNode {
+  const lines = text.split('\n');
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      {lines.map((line, i) => {
+        if (!line.trim()) return <Box key={i} sx={{ height: 5 }} />;
+
+        const numMatch = line.match(/^(\d+)\.\s+(.*)/);
+        if (numMatch) {
+          return (
+            <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mb: 0.75 }}>
+              <Box sx={{
+                minWidth: 20, height: 20, borderRadius: '50%',
+                bgcolor: isUser ? 'rgba(255,255,255,0.25)' : `${C.accent}33`,
+                color: isUser ? '#fff' : C.accent,
+                fontSize: '0.65rem', fontWeight: 800,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, mt: '1px',
+              }}>
+                {numMatch[1]}
+              </Box>
+              <Box component="span" sx={{ fontSize: '0.875rem', lineHeight: 1.6 }}>
+                {parseBold(numMatch[2])}
+              </Box>
+            </Box>
+          );
+        }
+
+        const bulletMatch = line.match(/^[-•]\s+(.*)/);
+        if (bulletMatch) {
+          return (
+            <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mb: 0.5 }}>
+              <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: isUser ? 'rgba(255,255,255,0.7)' : C.accent, mt: '8px', flexShrink: 0 }} />
+              <Box component="span" sx={{ fontSize: '0.875rem', lineHeight: 1.6 }}>
+                {parseBold(bulletMatch[1])}
+              </Box>
+            </Box>
+          );
+        }
+
+        return (
+          <Box key={i} component="div" sx={{ fontSize: '0.875rem', lineHeight: 1.6, mb: 0.1 }}>
+            {parseBold(line)}
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
 // ── BookingCard ───────────────────────────────────────────────────────────────
 
 function BookingCard({ booking }: { booking: ChatBooking }) {
@@ -142,9 +204,9 @@ function HistoryPanel({ data, loading }: { data: HistoryMessage[]; loading: bool
                   color: m.role === 'user' ? '#fff' : C.text,
                   borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
                   border: m.role === 'assistant' ? `1px solid ${C.border}` : 'none',
-                  fontSize: '0.8125rem', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                  wordBreak: 'break-word',
                 }}>
-                  {m.content}
+                  {renderContent(m.content, m.role === 'user')}
                 </Box>
               </Box>
             ))}
@@ -353,9 +415,9 @@ export default function ChatWidget() {
                       color: msg.role === 'user' ? '#fff' : C.text,
                       borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                       border: msg.role === 'assistant' ? `1px solid ${C.border}` : 'none',
-                      fontSize: '0.875rem', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                      wordBreak: 'break-word',
                     }}>
-                      {msg.content}
+                      {renderContent(msg.content, msg.role === 'user')}
                     </Box>
                   </Box>
                 );

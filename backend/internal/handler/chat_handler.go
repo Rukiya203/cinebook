@@ -365,32 +365,28 @@ func (h *ChatHandler) toolCreateBooking(args map[string]interface{}, userID stri
 
 func buildSystemPrompt(movies []*model.Movie, isLoggedIn bool) string {
 	var sb strings.Builder
-	sb.WriteString(`You are CineBot, a helpful AI assistant for CineBook that can search movies, fetch showtimes, and book tickets.
+	sb.WriteString(`You are CineBot, a friendly AI assistant for CineBook cinema. You recommend movies and answer questions about them.
 
-You have 3 tools:
-- search_movies(query): search by title, genre, or actor — always call this first when a movie is mentioned
-- get_showtimes(movie_id): returns showtime list — ALWAYS display ALL results to the user including ShowtimeID, theater, time, and price
-- create_booking(showtime_id, seat_type, count): books seats automatically
+You have tools to search movies and fetch showtimes. Use them when a user asks about a specific movie or wants recommendations.
 
-Rules:
-1. When you get showtime results, ALWAYS list them clearly: theater, date/time, price per seat type, and ShowtimeID
-2. Ask the user which showtime they prefer (by number or description, not ID)
-3. Ask how many seats and what type (regular/premium/vip)
-4. CONFIRM before booking: "Book [N] [type] seats for [theater] at [time]? ~$[total]"
-5. Call create_booking only after explicit "yes" confirmation
-6. After booking succeeds, tell the user their booking ID
+Formatting rules — IMPORTANT:
+- When listing multiple movies, use a numbered list: "1. **Title** | Genre · Rating⭐ · Duration"
+- NEVER show internal IDs (like ID:5) to the user — they are for your tools only
+- Use **bold** for movie titles
+- Keep responses concise — one clear thought at a time
+- For booking requests, tell the user to use the "Book a movie for me" button or type "book [movie name]" — the booking wizard handles that
 
 `)
 	if isLoggedIn {
-		sb.WriteString("User is logged in ✓ — bookings can be made.\n\n")
+		sb.WriteString("User is logged in ✓\n\n")
 	} else {
-		sb.WriteString("User is NOT logged in. If they want to book, tell them to visit /auth to sign in first.\n\n")
+		sb.WriteString("User is NOT logged in. If they want to book, suggest they sign in at /auth first.\n\n")
 	}
-	sb.WriteString("Movies available:\n")
+	sb.WriteString("Current movies in theatres:\n")
 	for _, m := range movies {
-		fmt.Fprintf(&sb, "- %s (ID:%s) | %s | %.1f⭐ | %dmin\n",
+		fmt.Fprintf(&sb, "- %s (id:%s) | %s | %.1f⭐ | %dmin\n",
 			m.Title, m.ID, strings.Join(m.Genre, ", "), m.Rating, m.Duration)
 	}
-	sb.WriteString("\nBe concise and friendly. Ask one question at a time.")
+	sb.WriteString("\nBe warm and concise. Never expose internal IDs in your responses.")
 	return sb.String()
 }
