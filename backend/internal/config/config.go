@@ -12,7 +12,7 @@ type Config struct {
 	Env            string // "development" | "production"
 	AllowedOrigins string // comma-separated CORS origins
 
-	AnthropicAPIKey string // used by the movie recommendation chat agent
+	GroqAPIKey string // used by the movie recommendation chat agent (Groq)
 
 	// PostgreSQL connection details
 	DBHost     string
@@ -32,7 +32,7 @@ func Load() *Config {
 		Env:            getEnv("ENV", "development"),
 		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000"),
 
-		AnthropicAPIKey: getEnv("ANTHROPIC_API_KEY", ""),
+		GroqAPIKey: getEnv("GROQ_API_KEY", ""),
 
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     getEnv("DB_PORT", "5432"),

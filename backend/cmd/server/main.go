@@ -58,7 +58,7 @@ func main() {
 	movieHandler := handler.NewMovieHandler(movieSvc)
 	showtimeHandler := handler.NewShowtimeHandler(showtimeSvc)
 	bookingHandler := handler.NewBookingHandler(bookingSvc)
-	chatHandler := handler.NewChatHandler(movieRepo, cfg.AnthropicAPIKey)
+	chatHandler := handler.NewChatHandler(movieRepo, cfg.GroqAPIKey)
 
 	r := chi.NewRouter()
 
