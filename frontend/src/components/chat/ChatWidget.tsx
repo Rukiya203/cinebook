@@ -2,7 +2,7 @@ import Box from '@oxygen-ui/react/Box';
 import Button from '@oxygen-ui/react/Button';
 import CircularProgress from '@oxygen-ui/react/CircularProgress';
 import Typography from '@oxygen-ui/react/Typography';
-import { ArrowLeft, CheckCircle, Clock, ExternalLink, MessageCircle, Send, Sparkles, Trash2, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, ExternalLink, MessageCircle, Send, Sparkles, Ticket, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -15,6 +15,20 @@ import {
   sendMessage,
 } from '../../services/chatService';
 import { C } from '../../theme';
+import BookingWizard from './BookingWizard';
+
+// ── constants ─────────────────────────────────────────────────────────────────
+
+const BOOKING_KEYWORDS = ['book', 'reserve', 'ticket', 'watch a movie', 'cinema', 'buy ticket'];
+
+function detectBookingIntent(msg: string): { isBooking: boolean; query?: string } {
+  const lower = msg.toLowerCase();
+  if (!BOOKING_KEYWORDS.some((kw) => lower.includes(kw))) return { isBooking: false };
+  // Try to extract a movie name after "book", "watch", etc.
+  const match = lower.match(/(?:book|watch|reserve|see)\s+(?:a\s+)?(?:movie\s+)?(.+)/);
+  const query = match?.[1]?.replace(/\s+for me.*/, '').trim();
+  return { isBooking: true, query: query && query.length > 2 ? query : undefined };
+}
 
 const SUGGESTIONS = [
   'Book a movie for me',
@@ -23,10 +37,7 @@ const SUGGESTIONS = [
   'Something under 2 hours',
 ];
 
-const WELCOME: ChatMessage = {
-  role: 'assistant',
-  content: "Hey! I'm CineBot 🎬 I can recommend movies AND book tickets for you. Just tell me what you're in the mood for!",
-};
+const WELCOME_TEXT = "Hey! I'm CineBot 🎬 I can recommend movies AND book tickets for you. Just tell me what you're in the mood for!";
 
 interface DisplayMessage {
   role: 'user' | 'assistant' | 'booking';
@@ -61,9 +72,7 @@ function groupByDate(msgs: HistoryMessage[]): { label: string; items: HistoryMes
 function BookingCard({ booking }: { booking: ChatBooking }) {
   const seats = booking.seats?.map((s) => `${s.row}${s.number}`).join(', ') ?? '—';
   const date = booking.showtime?.date_time
-    ? new Date(booking.showtime.date_time).toLocaleString('en-US', {
-        weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
-      })
+    ? new Date(booking.showtime.date_time).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
     : '';
   return (
     <Box sx={{ border: `1px solid ${C.accent}66`, borderRadius: 2, p: 2, bgcolor: `${C.accent}0d`, mt: 0.5 }}>
@@ -78,7 +87,7 @@ function BookingCard({ booking }: { booking: ChatBooking }) {
           {date && <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{date}</Typography>}
         </>
       )}
-      <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between' }}>
         <Typography variant="caption" color="text.secondary">Seats: {seats}</Typography>
         <Typography variant="body2" fontWeight={700} color={C.gold}>${booking.total_amount.toFixed(2)}</Typography>
       </Box>
@@ -107,30 +116,20 @@ function HistoryPanel({ data, loading }: { data: HistoryMessage[]; loading: bool
     return (
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1.5, p: 3 }}>
         <Clock size={36} color={C.muted} />
-        <Typography variant="body2" color="text.secondary" textAlign="center">
-          No history yet. Start a conversation with CineBot!
-        </Typography>
+        <Typography variant="body2" color="text.secondary" textAlign="center">No history yet. Start a conversation!</Typography>
       </Box>
     );
   }
-
   const groups = groupByDate(data);
   return (
-    <Box sx={{
-      flex: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 0.5,
-      '&::-webkit-scrollbar': { width: 4 },
-      '&::-webkit-scrollbar-thumb': { bgcolor: C.border, borderRadius: 2 },
-    }}>
+    <Box sx={{ flex: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 0.5, '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: C.border, borderRadius: 2 } }}>
       {groups.map(({ label, items }) => (
         <Box key={label}>
-          {/* Date divider */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 1.5 }}>
             <Box sx={{ flex: 1, height: '1px', bgcolor: C.border }} />
             <Typography variant="caption" sx={{ color: C.muted, fontWeight: 600, whiteSpace: 'nowrap', px: 1 }}>{label}</Typography>
             <Box sx={{ flex: 1, height: '1px', bgcolor: C.border }} />
           </Box>
-
-          {/* Messages for this date */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {items.map((m, i) => (
               <Box key={i} sx={{ display: 'flex', flexDirection: 'column', alignItems: m.role === 'user' ? 'flex-end' : 'flex-start', gap: 0.25 }}>
@@ -143,8 +142,7 @@ function HistoryPanel({ data, loading }: { data: HistoryMessage[]; loading: bool
                   color: m.role === 'user' ? '#fff' : C.text,
                   borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
                   border: m.role === 'assistant' ? `1px solid ${C.border}` : 'none',
-                  fontSize: '0.8125rem', lineHeight: 1.55,
-                  whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                  fontSize: '0.8125rem', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
                 }}>
                   {m.content}
                 </Box>
@@ -163,24 +161,25 @@ export default function ChatWidget() {
   const { isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<'chat' | 'history'>('chat');
-  const [messages, setMessages] = useState<DisplayMessage[]>([{ role: 'assistant', content: WELCOME.content }]);
+  const [messages, setMessages] = useState<DisplayMessage[]>([{ role: 'assistant', content: WELCOME_TEXT }]);
   const [historyData, setHistoryData] = useState<HistoryMessage[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [wizardQuery, setWizardQuery] = useState<string | undefined>(undefined);
+  const [wizardActive, setWizardActive] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (view === 'chat') bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading, view]);
+  }, [messages, loading, view, wizardActive]);
 
   useEffect(() => {
-    if (open && view === 'chat') setTimeout(() => inputRef.current?.focus(), 150);
-  }, [open, view]);
+    if (open && view === 'chat' && !wizardActive) setTimeout(() => inputRef.current?.focus(), 150);
+  }, [open, view, wizardActive]);
 
-  // Load history once when chat opens (for pre-populating the chat and the history panel)
   useEffect(() => {
     if (!open || !isAuthenticated || historyLoaded) return;
     setHistoryLoaded(true);
@@ -188,16 +187,21 @@ export default function ChatWidget() {
       setHistoryData(history);
       if (history.length > 0) {
         setMessages([
-          { role: 'assistant', content: WELCOME.content },
+          { role: 'assistant', content: WELCOME_TEXT },
           ...history.map((m) => ({ role: m.role, content: m.content })),
         ]);
       }
     }).catch(() => {});
   }, [open, isAuthenticated, historyLoaded]);
 
+  const addMessage = (role: 'user' | 'assistant', content: string) => {
+    setMessages((prev) => [...prev, { role, content }]);
+    const now = new Date().toISOString();
+    setHistoryData((prev) => [...prev, { role, content, created_at: now }]);
+  };
+
   const handleShowHistory = () => {
     setView('history');
-    // Refresh history data when the panel is opened
     if (isAuthenticated) {
       setHistoryLoading(true);
       getHistory().then(setHistoryData).catch(() => {}).finally(() => setHistoryLoading(false));
@@ -206,20 +210,36 @@ export default function ChatWidget() {
 
   const handleClearHistory = async () => {
     await clearHistory().catch(() => {});
-    setMessages([{ role: 'assistant', content: WELCOME.content }]);
+    setMessages([{ role: 'assistant', content: WELCOME_TEXT }]);
     setHistoryData([]);
     setHistoryLoaded(false);
     setView('chat');
   };
 
+  const startWizard = (query?: string) => {
+    addMessage('assistant', "Let's book your tickets! Search for a movie below. 🎟️");
+    setWizardQuery(query);
+    setWizardActive(true);
+  };
+
   const send = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
+    setInput('');
+
+    // Check for booking intent
+    if (isAuthenticated) {
+      const { isBooking, query } = detectBookingIntent(trimmed);
+      if (isBooking) {
+        addMessage('user', trimmed);
+        startWizard(query);
+        return;
+      }
+    }
 
     const userDisplay: DisplayMessage = { role: 'user', content: trimmed };
     const next = [...messages, userDisplay];
     setMessages(next);
-    setInput('');
     setLoading(true);
 
     const apiHistory: ChatMessage[] = next
@@ -231,13 +251,8 @@ export default function ChatWidget() {
       const updated: DisplayMessage[] = [...next, { role: 'assistant', content: result.message }];
       if (result.booking) updated.push({ role: 'booking', content: '', booking: result.booking });
       setMessages(updated);
-      // Append to local history data so the panel reflects the new messages immediately
       const now = new Date().toISOString();
-      setHistoryData((prev) => [
-        ...prev,
-        { role: 'user', content: trimmed, created_at: now },
-        { role: 'assistant', content: result.message, created_at: now },
-      ]);
+      setHistoryData((prev) => [...prev, { role: 'user', content: trimmed, created_at: now }, { role: 'assistant', content: result.message, created_at: now }]);
     } catch {
       setMessages([...next, { role: 'assistant', content: "Sorry, I couldn't connect right now. Please try again!" }]);
     } finally {
@@ -249,7 +264,7 @@ export default function ChatWidget() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); }
   };
 
-  const showSuggestions = messages.length === 1;
+  const showSuggestions = messages.length === 1 && !wizardActive;
 
   return (
     <>
@@ -257,7 +272,7 @@ export default function ChatWidget() {
         <Box sx={{
           position: 'fixed', bottom: 88, right: 24, zIndex: 1300,
           width: { xs: 'calc(100vw - 48px)', sm: 390 },
-          height: 540,
+          height: 560,
           bgcolor: C.card, border: `1px solid ${C.border}`, borderRadius: 3,
           display: 'flex', flexDirection: 'column',
           boxShadow: `0 24px 64px rgba(0,0,0,0.6)`,
@@ -278,32 +293,27 @@ export default function ChatWidget() {
                 <Sparkles size={16} color={C.accent} />
               </Box>
             )}
-
             <Box sx={{ flex: 1 }}>
               <Typography variant="body1" fontWeight={700} color="text.primary">
                 {view === 'history' ? 'Chat History' : 'CineBot'}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {view === 'history' ? `${historyData.length} messages saved` : 'AI assistant · can book tickets'}
+                {view === 'history' ? `${historyData.length} messages` : wizardActive ? 'Booking wizard' : 'AI assistant · can book tickets'}
               </Typography>
             </Box>
 
-            {/* History button — only on chat view, only when authenticated */}
-            {view === 'chat' && isAuthenticated && (
+            {view === 'chat' && isAuthenticated && !wizardActive && (
               <Box component="button" onClick={handleShowHistory} title="View chat history"
                 sx={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, display: 'flex', p: 0.5, borderRadius: 1, '&:hover': { color: C.text, bgcolor: C.border } }}>
                 <Clock size={16} />
               </Box>
             )}
-
-            {/* Clear button — only on history view */}
             {view === 'history' && historyData.length > 0 && (
-              <Box component="button" onClick={handleClearHistory} title="Clear all history"
+              <Box component="button" onClick={handleClearHistory} title="Clear history"
                 sx={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, display: 'flex', p: 0.5, borderRadius: 1, '&:hover': { color: 'error.main', bgcolor: C.border } }}>
                 <Trash2 size={15} />
               </Box>
             )}
-
             <Box component="button" onClick={() => setOpen(false)}
               sx={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, display: 'flex', p: 0.5, borderRadius: 1, '&:hover': { color: C.text, bgcolor: C.border } }}>
               <X size={18} />
@@ -326,11 +336,7 @@ export default function ChatWidget() {
 
           {/* Chat messages */}
           {view === 'chat' && (
-            <Box sx={{
-              flex: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 1.5,
-              '&::-webkit-scrollbar': { width: 4 },
-              '&::-webkit-scrollbar-thumb': { bgcolor: C.border, borderRadius: 2 },
-            }}>
+            <Box sx={{ flex: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 1.5, '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: C.border, borderRadius: 2 } }}>
               {messages.map((msg, i) => {
                 if (msg.role === 'booking' && msg.booking) {
                   return (
@@ -347,8 +353,7 @@ export default function ChatWidget() {
                       color: msg.role === 'user' ? '#fff' : C.text,
                       borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                       border: msg.role === 'assistant' ? `1px solid ${C.border}` : 'none',
-                      fontSize: '0.875rem', lineHeight: 1.6,
-                      whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                      fontSize: '0.875rem', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
                     }}>
                       {msg.content}
                     </Box>
@@ -365,16 +370,22 @@ export default function ChatWidget() {
                 </Box>
               )}
 
+              {/* Suggestion chips */}
               {showSuggestions && !loading && (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
                   {SUGGESTIONS.map((s) => (
-                    <Box key={s} component="button" onClick={() => send(s)}
+                    <Box key={s} component="button"
+                      onClick={() => s === 'Book a movie for me' && isAuthenticated ? startWizard() : send(s)}
                       sx={{
                         background: 'none', border: `1px solid ${C.border}`, cursor: 'pointer',
-                        color: C.textSec, borderRadius: 999, px: 1.5, py: 0.5,
+                        color: s === 'Book a movie for me' ? C.accent : C.textSec,
+                        borderColor: s === 'Book a movie for me' ? `${C.accent}66` : C.border,
+                        borderRadius: 999, px: 1.5, py: 0.5,
                         fontSize: '0.75rem', fontWeight: 500, transition: 'all 0.15s',
+                        display: 'flex', alignItems: 'center', gap: 0.5,
                         '&:hover': { borderColor: C.accent, color: C.accent, bgcolor: `${C.accent}11` },
                       }}>
+                      {s === 'Book a movie for me' && <Ticket size={11} />}
                       {s}
                     </Box>
                   ))}
@@ -385,13 +396,26 @@ export default function ChatWidget() {
             </Box>
           )}
 
-          {/* Input — only on chat view */}
-          {view === 'chat' && (
+          {/* Booking wizard panel (replaces input when active) */}
+          {view === 'chat' && wizardActive && (
+            <BookingWizard
+              initialQuery={wizardQuery}
+              onMessage={addMessage}
+              onCancel={() => {
+                setWizardActive(false);
+                setWizardQuery(undefined);
+                addMessage('assistant', 'No problem! Feel free to ask me anything else.');
+              }}
+            />
+          )}
+
+          {/* Regular input (hidden when wizard is active) */}
+          {view === 'chat' && !wizardActive && (
             <Box sx={{ p: 2, borderTop: `1px solid ${C.border}`, display: 'flex', gap: 1, flexShrink: 0 }}>
               <Box component="input" ref={inputRef} value={input}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
                 onKeyDown={handleKey}
-                placeholder="Ask me anything or say 'book a movie'…"
+                placeholder={isAuthenticated ? "Ask anything or say 'book a movie'…" : 'Ask me about movies…'}
                 disabled={loading}
                 sx={{
                   flex: 1, bgcolor: C.surface, border: `1px solid ${C.border}`,
