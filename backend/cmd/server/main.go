@@ -46,6 +46,7 @@ func main() {
 	movieRepo := repository.NewMovieRepository(pool)
 	showtimeRepo := repository.NewShowtimeRepository(pool)
 	bookingRepo := repository.NewBookingRepository(pool)
+	chatRepo := repository.NewChatRepository(pool)
 
 	// Services
 	authSvc := service.NewAuthService(userRepo, cfg.JWTSecret)
@@ -58,7 +59,7 @@ func main() {
 	movieHandler := handler.NewMovieHandler(movieSvc)
 	showtimeHandler := handler.NewShowtimeHandler(showtimeSvc)
 	bookingHandler := handler.NewBookingHandler(bookingSvc)
-	chatHandler := handler.NewChatHandler(movieRepo, showtimeRepo, bookingSvc, cfg.GroqAPIKey, cfg.JWTSecret)
+	chatHandler := handler.NewChatHandler(movieRepo, showtimeRepo, bookingSvc, chatRepo, cfg.GroqAPIKey, cfg.JWTSecret)
 
 	r := chi.NewRouter()
 
@@ -91,6 +92,8 @@ func main() {
 			r.Get("/bookings", bookingHandler.GetMyBookings)
 			r.Get("/bookings/{id}", bookingHandler.GetByID)
 			r.Patch("/bookings/{id}/cancel", bookingHandler.Cancel)
+			r.Get("/chat/history", chatHandler.GetHistory)
+			r.Delete("/chat/history", chatHandler.ClearHistory)
 		})
 	})
 
