@@ -58,6 +58,7 @@ func main() {
 	movieHandler := handler.NewMovieHandler(movieSvc)
 	showtimeHandler := handler.NewShowtimeHandler(showtimeSvc)
 	bookingHandler := handler.NewBookingHandler(bookingSvc)
+	chatHandler := handler.NewChatHandler(movieRepo, cfg.AnthropicAPIKey)
 
 	r := chi.NewRouter()
 
@@ -74,6 +75,8 @@ func main() {
 	r.Route("/api", func(r chi.Router) {
 		r.Post("/auth/register", authHandler.Register)
 		r.Post("/auth/login", authHandler.Login)
+
+		r.Post("/chat", chatHandler.Chat)
 
 		r.Get("/movies", movieHandler.GetAll)
 		r.Get("/movies/{id}", movieHandler.GetByID)

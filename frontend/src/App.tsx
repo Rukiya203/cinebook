@@ -1,5 +1,6 @@
 import Box from '@oxygen-ui/react/Box';
 import { Toaster } from 'react-hot-toast';
+import ChatWidget from './components/chat/ChatWidget';
 import { Route, Routes } from 'react-router-dom';
 import Footer from './components/common/Footer';
 import Header from './components/common/Header';
@@ -29,6 +30,7 @@ export default function App() {
         </Box>
         <Footer />
       </Box>
+      <ChatWidget />
       <Toaster
         position="top-right"
         toastOptions={{
