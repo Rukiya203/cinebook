@@ -12,6 +12,8 @@ type Config struct {
 	Env            string // "development" | "production"
 	AllowedOrigins string // comma-separated CORS origins
 
+	GroqAPIKey string // used by the movie recommendation chat agent (Groq)
+
 	// PostgreSQL connection details
 	DBHost     string
 	DBPort     string
@@ -29,6 +31,8 @@ func Load() *Config {
 		JWTSecret:      getEnv("JWT_SECRET", "cinema-booking-super-secret-2026"),
 		Env:            getEnv("ENV", "development"),
 		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000"),
+
+		GroqAPIKey: getEnv("GROQ_API_KEY", ""),
 
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     getEnv("DB_PORT", "5432"),
