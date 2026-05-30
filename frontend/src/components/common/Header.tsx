@@ -4,14 +4,16 @@ import Drawer from '@oxygen-ui/react/Drawer';
 import IconButton from '@oxygen-ui/react/IconButton';
 import Toolbar from '@oxygen-ui/react/Toolbar';
 import Typography from '@oxygen-ui/react/Typography';
-import { Film, LogOut, Menu, Ticket, User, X } from 'lucide-react';
+import { Film, LogOut, Menu, Moon, Sun, Ticket, User, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useColorMode } from '../../context/ThemeContext';
 import { C } from '../../theme';
 
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
+  const { mode, toggleMode } = useColorMode();
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -51,6 +53,10 @@ export default function Header() {
 
           {/* Desktop Auth */}
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 2 }}>
+            <Box component="button" onClick={toggleMode} title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              sx={{ background: 'none', border: `1px solid ${C.border}`, cursor: 'pointer', color: C.muted, display: 'flex', p: 0.75, borderRadius: 2, transition: 'all 0.15s', '&:hover': { color: C.text, borderColor: C.muted, bgcolor: C.surface } }}>
+              {mode === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            </Box>
             {isAuthenticated ? (
               <>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -107,6 +113,11 @@ export default function Header() {
               {label}
             </NavLink>
           ))}
+          <Box component="button" onClick={toggleMode}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1.5, background: 'none', border: 'none', cursor: 'pointer', color: C.textSec, fontSize: '0.875rem', fontWeight: 500, '&:hover': { color: C.text } }}>
+            {mode === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            {mode === 'dark' ? 'Light mode' : 'Dark mode'}
+          </Box>
           <Box sx={{ borderTop: `1px solid ${C.border}`, pt: 3 }}>
             {isAuthenticated ? (
               <Box component="button" onClick={handleLogout}

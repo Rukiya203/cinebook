@@ -1,90 +1,117 @@
 import { createTheme } from '@mui/material/styles';
 
-// Cinema color palette — mirrors the previous Tailwind custom theme
+// C is the runtime color palette used in sx props.
+// Values are CSS custom properties so they update instantly when the html.light
+// class is toggled — no component re-renders needed for colors.
+// Accent is static (never changes between modes).
 export const C = {
-  bg:          '#07070d',
-  card:        '#0e0e1a',
-  surface:     '#13132b',
-  border:      '#252540',
+  bg:          'var(--c-bg)',
+  card:        'var(--c-card)',
+  surface:     'var(--c-surface)',
+  border:      'var(--c-border)',
   accent:      '#e50914',
   accentDark:  '#b80710',
-  gold:        '#f5c518',
-  text:        '#e8e8f0',
-  textSec:     '#9898b8',
-  muted:       '#5a5a7a',
+  gold:        'var(--c-gold)',
+  text:        'var(--c-text)',
+  textSec:     'var(--c-text-sec)',
+  muted:       'var(--c-muted)',
+  goldAlpha:   'var(--c-gold-alpha)',   // replaces `${C.gold}15` template usage
+  goldBorder:  'var(--c-gold-border)',  // replaces `${C.gold}44` template usage
 } as const;
 
-const theme = createTheme({
-  palette: {
-    mode: 'dark',
-    primary:    { main: C.accent, dark: C.accentDark, contrastText: '#fff' },
-    secondary:  { main: C.gold },
-    background: { default: C.bg, paper: C.card },
-    text:       { primary: C.text, secondary: C.textSec },
-    divider:    C.border,
+// Actual palette values per mode — used by MUI's ThemeProvider so MUI components
+// (AppBar, Button, Card…) render with the right colours without needing CSS vars.
+const palette = {
+  dark: {
+    bg: '#07070d', card: '#0e0e1a', surface: '#13132b',
+    border: '#252540', text: '#e8e8f0', textSec: '#9898b8',
+    muted: '#5a5a7a', gold: '#f5c518',
   },
-  typography: {
-    fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif',
-    button: { textTransform: 'none', fontWeight: 600 },
+  light: {
+    bg: '#f4f4fb', card: '#ffffff', surface: '#ebebf5',
+    border: '#d6d6ea', text: '#09090f', textSec: '#42426a',
+    muted: '#74749a', gold: '#c9930c',
   },
-  shape: { borderRadius: 12 },
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        body: { backgroundColor: C.bg, color: C.text, minHeight: '100vh' },
-        '::-webkit-scrollbar': { width: 6, height: 6 },
-        '::-webkit-scrollbar-track': { background: C.bg },
-        '::-webkit-scrollbar-thumb': { background: C.border, borderRadius: 4 },
-        '::-webkit-scrollbar-thumb:hover': { background: C.muted },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: { borderRadius: 12, fontWeight: 600 },
-        containedPrimary: {
-          '&:hover': { backgroundColor: C.accentDark },
-        },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: { backgroundColor: C.card, border: `1px solid ${C.border}`, backgroundImage: 'none' },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: { backgroundImage: 'none' },
-      },
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          '& .MuiOutlinedInput-root': {
-            borderRadius: 12,
-            backgroundColor: C.surface,
-            '& fieldset': { borderColor: C.border },
-            '&:hover fieldset': { borderColor: C.muted },
-            '&.Mui-focused fieldset': { borderColor: C.accent },
-          },
-          '& .MuiInputLabel-root': { color: C.muted },
-          '& .MuiInputBase-input': { color: C.text },
-        },
-      },
-    },
-    MuiChip: {
-      styleOverrides: {
-        root: { borderRadius: 999 },
-      },
-    },
-    MuiDivider: {
-      styleOverrides: { root: { borderColor: C.border } },
-    },
-    MuiAppBar: {
-      styleOverrides: {
-        root: { backgroundColor: `${C.bg}f2`, backgroundImage: 'none', borderBottom: `1px solid ${C.border}` },
-      },
-    },
-  },
-});
+};
 
-export default theme;
+export function createAppTheme(mode: 'dark' | 'light') {
+  const p = palette[mode];
+  return createTheme({
+    palette: {
+      mode,
+      primary:    { main: '#e50914', dark: '#b80710', contrastText: '#fff' },
+      secondary:  { main: p.gold },
+      background: { default: p.bg, paper: p.card },
+      text:       { primary: p.text, secondary: p.textSec },
+      divider:    p.border,
+    },
+    typography: {
+      fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif',
+      button: { textTransform: 'none', fontWeight: 600 },
+    },
+    shape: { borderRadius: 12 },
+    components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          body: { backgroundColor: p.bg, color: p.text, minHeight: '100vh' },
+          '::-webkit-scrollbar': { width: 6, height: 6 },
+          '::-webkit-scrollbar-track': { background: p.bg },
+          '::-webkit-scrollbar-thumb': { background: p.border, borderRadius: 4 },
+          '::-webkit-scrollbar-thumb:hover': { background: p.muted },
+        },
+      },
+      MuiButton: {
+        styleOverrides: {
+          root: { borderRadius: 12, fontWeight: 600 },
+          containedPrimary: { '&:hover': { backgroundColor: '#b80710' } },
+        },
+      },
+      MuiCard: {
+        styleOverrides: {
+          root: { backgroundColor: p.card, border: `1px solid ${p.border}`, backgroundImage: 'none' },
+        },
+      },
+      MuiPaper: {
+        styleOverrides: { root: { backgroundImage: 'none' } },
+      },
+      MuiTextField: {
+        styleOverrides: {
+          root: {
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 12,
+              backgroundColor: p.surface,
+              '& fieldset': { borderColor: p.border },
+              '&:hover fieldset': { borderColor: p.muted },
+              '&.Mui-focused fieldset': { borderColor: '#e50914' },
+            },
+            '& .MuiInputLabel-root': { color: p.muted },
+            '& .MuiInputBase-input': { color: p.text },
+          },
+        },
+      },
+      MuiChip: {
+        styleOverrides: { root: { borderRadius: 999 } },
+      },
+      MuiDivider: {
+        styleOverrides: { root: { borderColor: p.border } },
+      },
+      MuiAppBar: {
+        styleOverrides: {
+          root: {
+            backgroundColor: mode === 'dark' ? `${p.bg}f2` : `${p.card}ee`,
+            backgroundImage: 'none',
+            borderBottom: `1px solid ${p.border}`,
+          },
+        },
+      },
+      MuiDrawer: {
+        styleOverrides: {
+          paper: { backgroundColor: p.card, backgroundImage: 'none' },
+        },
+      },
+    },
+  });
+}
+
+// Default export kept for any legacy import — always dark.
+export default createAppTheme('dark');

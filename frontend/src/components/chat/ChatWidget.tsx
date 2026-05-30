@@ -384,7 +384,7 @@ export default function ChatWidget() {
 
           {/* Login nudge */}
           {!isAuthenticated && view === 'chat' && (
-            <Box sx={{ mx: 2, mt: 1.5, px: 2, py: 1.25, bgcolor: `${C.gold}15`, border: `1px solid ${C.gold}44`, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexShrink: 0 }}>
+            <Box sx={{ mx: 2, mt: 1.5, px: 2, py: 1.25, bgcolor: C.goldAlpha, border: `1px solid ${C.goldBorder}`, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexShrink: 0 }}>
               <Typography variant="caption" sx={{ color: C.gold, fontWeight: 600 }}>Log in to book tickets with CineBot</Typography>
               <Box component={Link} to="/auth"
                 sx={{ fontSize: '0.7rem', fontWeight: 700, color: C.gold, textDecoration: 'none', border: `1px solid ${C.gold}66`, borderRadius: 1, px: 1, py: 0.25, whiteSpace: 'nowrap', '&:hover': { bgcolor: `${C.gold}22` } }}>

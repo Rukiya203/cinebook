@@ -2,3 +2,34 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 img { max-width: 100%; display: block; }
+
+/* ── Theme color tokens ───────────────────────────────────────────────────────
+   These CSS custom properties are the single source of truth for all custom
+   colors used in sx props via the C object in theme.ts.
+   Dark mode is the default; the `html.light` class switches to light mode.   */
+
+:root {
+  --c-bg:          #07070d;
+  --c-card:        #0e0e1a;
+  --c-surface:     #13132b;
+  --c-border:      #252540;
+  --c-text:        #e8e8f0;
+  --c-text-sec:    #9898b8;
+  --c-muted:       #5a5a7a;
+  --c-gold:        #f5c518;
+  --c-gold-alpha:  rgba(245, 197, 24, 0.08);
+  --c-gold-border: rgba(245, 197, 24, 0.27);
+}
+
+html.light {
+  --c-bg:          #f4f4fb;
+  --c-card:        #ffffff;
+  --c-surface:     #ebebf5;
+  --c-border:      #d6d6ea;
+  --c-text:        #09090f;
+  --c-text-sec:    #42426a;
+  --c-muted:       #74749a;
+  --c-gold:        #c9930c;
+  --c-gold-alpha:  rgba(201, 147, 12, 0.08);
+  --c-gold-border: rgba(201, 147, 12, 0.27);
+}
