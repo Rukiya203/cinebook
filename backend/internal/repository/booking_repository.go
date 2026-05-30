@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"github.com/jackc/pgx/v5"
@@ -51,27 +52,42 @@ func (r *postgresBookingRepository) FindByID(id string) (*model.Booking, error) 
 	return b, err
 }
 
-// FindByUserID returns all bookings for a user, most recent first.
+// FindByUserID returns all bookings for a user, fully enriched with showtime,
+// movie (title/poster/rating/duration/genre), and booked seat details — all in
+// a single JOIN query instead of N round-trips per booking.
 func (r *postgresBookingRepository) FindByUserID(userID string) ([]*model.Booking, error) {
-	rows, err := r.pool.Query(context.Background(),
-		`SELECT id, user_id, showtime_id, seat_ids, total_amount, status, booked_at
-		 FROM bookings
-		 WHERE user_id = $1
-		 ORDER BY booked_at DESC`, userID)
+	rows, err := r.pool.Query(context.Background(), `
+		SELECT
+		    b.id, b.user_id, b.showtime_id, b.seat_ids, b.total_amount, b.status, b.booked_at,
+		    st.id, st.theater, st.date_time, st.prices,
+		    m.id, m.title, m.poster_url, m.rating, m.duration, m.genre,
+		    COALESCE(
+		        json_agg(
+		            json_build_object(
+		                'id', s.id, 'showtime_id', s.showtime_id,
+		                'row', s.row, 'number', s.number,
+		                'type', s.type::text, 'is_booked', s.is_booked, 'price', s.price
+		            ) ORDER BY s.row, s.number
+		        ) FILTER (WHERE s.id IS NOT NULL),
+		        '[]'
+		    )::text AS seats_json
+		FROM bookings b
+		JOIN showtimes st ON st.id = b.showtime_id
+		JOIN movies    m  ON m.id  = st.movie_id
+		LEFT JOIN seats s ON s.showtime_id = b.showtime_id AND s.id = ANY(b.seat_ids)
+		WHERE b.user_id = $1
+		GROUP BY
+		    b.id, b.user_id, b.showtime_id, b.seat_ids, b.total_amount, b.status, b.booked_at,
+		    st.id, st.theater, st.date_time, st.prices,
+		    m.id, m.title, m.poster_url, m.rating, m.duration, m.genre
+		ORDER BY b.booked_at DESC`,
+		userID,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
-	var bookings []*model.Booking
-	for rows.Next() {
-		b, err := scanBooking(rows)
-		if err != nil {
-			return nil, err
-		}
-		bookings = append(bookings, b)
-	}
-	return bookings, rows.Err()
+	return collectEnrichedBookings(rows)
 }
 
 // UpdateStatus changes a booking's status (e.g. confirmed → cancelled).
@@ -108,4 +124,66 @@ func scanBooking(row rowScanner) (*model.Booking, error) {
 	}
 	b.Status = model.BookingStatus(status)
 	return b, nil
+}
+
+// rawSeat is used to unmarshal the json_agg seats column from the enriched query.
+type rawSeat struct {
+	ID         string  `json:"id"`
+	ShowtimeID string  `json:"showtime_id"`
+	Row        string  `json:"row"`
+	Number     int     `json:"number"`
+	Type       string  `json:"type"`
+	IsBooked   bool    `json:"is_booked"`
+	Price      float64 `json:"price"`
+}
+
+// collectEnrichedBookings scans the JOIN query result from FindByUserID.
+// Each row contains inline showtime and movie fields plus a JSON-aggregated seats column,
+// eliminating the N-per-booking round-trips that enrichBooking used to perform.
+func collectEnrichedBookings(rows pgx.Rows) ([]*model.Booking, error) {
+	var bookings []*model.Booking
+	for rows.Next() {
+		b := &model.Booking{}
+		st := &model.Showtime{}
+		m := &model.Movie{}
+
+		var status, seatsJSON string
+		var pricesJSON []byte
+
+		if err := rows.Scan(
+			&b.ID, &b.UserID, &b.ShowtimeID, &b.SeatIDs, &b.TotalAmount, &status, &b.BookedAt,
+			&st.ID, &st.Theater, &st.DateTime, &pricesJSON,
+			&m.ID, &m.Title, &m.PosterURL, &m.Rating, &m.Duration, &m.Genre,
+			&seatsJSON,
+		); err != nil {
+			return nil, err
+		}
+		b.Status = model.BookingStatus(status)
+
+		if err := json.Unmarshal(pricesJSON, &st.Prices); err != nil {
+			return nil, err
+		}
+		st.MovieID = m.ID
+		b.Showtime = st
+		b.Movie = m
+
+		var rawSeats []rawSeat
+		if err := json.Unmarshal([]byte(seatsJSON), &rawSeats); err != nil {
+			return nil, err
+		}
+		for _, rs := range rawSeats {
+			b.Seats = append(b.Seats, model.Seat{
+				ID:         rs.ID,
+				ShowtimeID: rs.ShowtimeID,
+				Row:        rs.Row,
+				Number:     rs.Number,
+				Type:       model.SeatType(rs.Type),
+				IsBooked:   rs.IsBooked,
+				Price:      rs.Price,
+			})
+		}
+
+		bookings = append(bookings, b)
+	}
+	return bookings, rows.Err()
 }
