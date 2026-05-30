@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -189,9 +188,11 @@ func scanShowtime(row pgx.Row) (*model.Showtime, error) {
 	if err := row.Scan(&st.ID, &st.MovieID, &st.Theater, &st.DateTime, &pricesJSON, &st.Available, &st.Total); err != nil {
 		return nil, err
 	}
-	if err := json.Unmarshal(pricesJSON, &st.Prices); err != nil {
-		return nil, fmt.Errorf("unmarshal prices: %w", err)
+	prices, err := unmarshalPrices(pricesJSON)
+	if err != nil {
+		return nil, err
 	}
+	st.Prices = prices
 	return st, nil
 }
 
@@ -204,9 +205,11 @@ func collectShowtimes(rows pgx.Rows) ([]*model.Showtime, error) {
 		if err := rows.Scan(&st.ID, &st.MovieID, &st.Theater, &st.DateTime, &pricesJSON, &st.Available, &st.Total); err != nil {
 			return nil, err
 		}
-		if err := json.Unmarshal(pricesJSON, &st.Prices); err != nil {
-			return nil, fmt.Errorf("unmarshal prices: %w", err)
+		prices, err := unmarshalPrices(pricesJSON)
+		if err != nil {
+			return nil, err
 		}
+		st.Prices = prices
 		result = append(result, st)
 	}
 	return result, rows.Err()

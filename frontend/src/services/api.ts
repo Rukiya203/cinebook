@@ -40,4 +40,12 @@ api.interceptors.response.use(
   }
 );
 
+/** Extracts the human-readable error message from an Axios API error response. */
+export function extractApiError(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    return (err.response?.data as { error?: string })?.error ?? fallback;
+  }
+  return fallback;
+}
+
 export default api;

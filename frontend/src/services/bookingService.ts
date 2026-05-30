@@ -1,14 +1,5 @@
-import axios from 'axios';
-import api from './api';
+import api, { extractApiError } from './api';
 import type { APIResponse, Booking, CreateBookingRequest } from '../types';
-
-/** Extracts the backend error message from an Axios error response. */
-function extractApiError(err: unknown, fallback: string): string {
-  if (axios.isAxiosError(err)) {
-    return (err.response?.data as APIResponse<unknown>)?.error ?? fallback;
-  }
-  return fallback;
-}
 
 /** Handles booking creation, retrieval, and cancellation. All calls require a valid JWT. */
 const bookingService = {

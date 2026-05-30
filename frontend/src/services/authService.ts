@@ -1,17 +1,5 @@
-import axios from 'axios';
-import api from './api';
+import api, { extractApiError } from './api';
 import type { APIResponse, AuthResponse, LoginRequest, RegisterRequest } from '../types';
-
-/**
- * Extracts the human-readable error message from an Axios error response.
- * Falls back to `fallback` when the response does not contain an error field.
- */
-function extractApiError(err: unknown, fallback: string): string {
-  if (axios.isAxiosError(err)) {
-    return (err.response?.data as APIResponse<unknown>)?.error ?? fallback;
-  }
-  return fallback;
-}
 
 /** Handles user authentication — register and login. */
 const authService = {

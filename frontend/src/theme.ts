@@ -113,5 +113,15 @@ export function createAppTheme(mode: 'dark' | 'light') {
   });
 }
 
+// Shared sx snippets used across multiple components.
+export const thinScrollbar = {
+  '&::-webkit-scrollbar': { width: 4 },
+  '&::-webkit-scrollbar-thumb': { bgcolor: C.border, borderRadius: 2 },
+} as const;
+
+export const accentHover = {
+  '&:hover': { borderColor: C.accent, bgcolor: `${C.accent}11` },
+} as const;
+
 // Default export kept for any legacy import — always dark.
 export default createAppTheme('dark');

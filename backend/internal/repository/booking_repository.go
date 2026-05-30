@@ -160,9 +160,11 @@ func collectEnrichedBookings(rows pgx.Rows) ([]*model.Booking, error) {
 		}
 		b.Status = model.BookingStatus(status)
 
-		if err := json.Unmarshal(pricesJSON, &st.Prices); err != nil {
+		prices, err := unmarshalPrices(pricesJSON)
+		if err != nil {
 			return nil, err
 		}
+		st.Prices = prices
 		st.MovieID = m.ID
 		b.Showtime = st
 		b.Movie = m
