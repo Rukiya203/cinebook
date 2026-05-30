@@ -41,11 +41,11 @@ func main() {
 		log.Fatalf("Seeding failed: %v", err)
 	}
 
-	// Repositories — backed by PostgreSQL
+	// Repositories — backed by PostgreSQL, hot-path reads served from in-memory TTL cache.
 	userRepo := repository.NewUserRepository(pool)
-	movieRepo := repository.NewMovieRepository(pool)
-	showtimeRepo := repository.NewShowtimeRepository(pool)
-	bookingRepo := repository.NewBookingRepository(pool)
+	movieRepo := repository.NewCachedMovieRepository(repository.NewMovieRepository(pool))
+	showtimeRepo := repository.NewCachedShowtimeRepository(repository.NewShowtimeRepository(pool))
+	bookingRepo := repository.NewCachedBookingRepository(repository.NewBookingRepository(pool))
 	chatRepo := repository.NewChatRepository(pool)
 
 	// Services
@@ -61,10 +61,17 @@ func main() {
 	bookingHandler := handler.NewBookingHandler(bookingSvc)
 	chatHandler := handler.NewChatHandler(movieRepo, showtimeRepo, bookingSvc, chatRepo, cfg.GroqAPIKey, cfg.JWTSecret)
 
+	// Rate limiters — token bucket, per IP.
+	// Global:  60 req/s, burst 120  — protects DB and backend from general abuse.
+	// Chat:     5 req/s, burst 10   — each request may call Groq (external, metered).
+	globalLimiter := middleware.NewRateLimiter(60, 120)
+	chatLimiter := middleware.NewRateLimiter(5, 10)
+
 	r := chi.NewRouter()
 
 	r.Use(chiMiddleware.Recoverer)
 	r.Use(middleware.Logger)
+	r.Use(globalLimiter.Limit)
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   strings.Split(cfg.AllowedOrigins, ","),
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -77,7 +84,7 @@ func main() {
 		r.Post("/auth/register", authHandler.Register)
 		r.Post("/auth/login", authHandler.Login)
 
-		r.Post("/chat", chatHandler.Chat)
+		r.With(chatLimiter.Limit).Post("/chat", chatHandler.Chat)
 
 		r.Get("/movies", movieHandler.GetAll)
 		r.Get("/movies/{id}", movieHandler.GetByID)

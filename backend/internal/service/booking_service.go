@@ -113,18 +113,11 @@ func (s *bookingService) Create(userID string, req *model.CreateBookingRequest) 
 	return booking, nil
 }
 
-// GetByUser returns all bookings for a user, enriched with showtime and movie data.
+// GetByUser returns all bookings for a user. FindByUserID now uses a JOIN query
+// that returns fully enriched bookings in one DB round-trip, so no per-booking
+// enrichment loop is needed here.
 func (s *bookingService) GetByUser(userID string) ([]*model.Booking, error) {
-	bookings, err := s.bookingRepo.FindByUserID(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Enrich each booking with showtime and movie details for the profile view.
-	for _, b := range bookings {
-		s.enrichBooking(b)
-	}
-	return bookings, nil
+	return s.bookingRepo.FindByUserID(userID)
 }
 
 // GetByID returns a single booking by ID, verified to belong to the requesting user.
